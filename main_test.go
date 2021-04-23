@@ -27,7 +27,6 @@ func TestOneClient(t *testing.T) {
 		}
 
 		got := len(x.clients)
-
 		want := 1
 
 		if got != want {
@@ -73,29 +72,24 @@ func TestTwoClients(t *testing.T) {
 	defer testServer.Close()
 
 	// client 1
-	url1 := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/client1"
-	conn1, _, err := websocket.DefaultDialer.Dial(url1, nil)
-	if err != nil {
-		t.Fatal("dialError: ", err)
-	}
-	defer conn1.Close()
+	cl1 := createTestClient(t, testServer, "client1")
+	defer cl1.Close()
 
 	// client 2
-	url2 := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/client2"
-	conn2, _, err := websocket.DefaultDialer.Dial(url2, nil)
-	errSkip(t, err)
-	defer conn2.Close()
+	cl2 := createTestClient(t, testServer, "client2")
+	defer cl2.Close()
 
-	err = conn2.SetReadDeadline(time.Now().Add(time.Millisecond))
+	// read time limit
+	err := cl2.SetReadDeadline(time.Now().Add(time.Millisecond))
 	errSkip(t, err)
 
-	var msg2 string
+	var latestMsg2 string
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	go func(msg2 *string) {
 		for {
-			_, msg, err := conn2.ReadMessage()
+			_, msg, err := cl2.ReadMessage()
 			if err != nil {
 				break
 			}
@@ -104,7 +98,7 @@ func TestTwoClients(t *testing.T) {
 		}
 
 		wg.Done()
-	}(&msg2)
+	}(&latestMsg2)
 
 	// send message to client2 from client1
 	reqBody := map[string]string{
@@ -112,18 +106,28 @@ func TestTwoClients(t *testing.T) {
 		"message":  "Hello client2",
 	}
 	encodedReqBody, _ := json.Marshal(reqBody)
-	err = conn1.WriteMessage(websocket.TextMessage, encodedReqBody)
+	err = cl1.WriteMessage(websocket.TextMessage, encodedReqBody)
 	errSkip(t, err)
 
 	wg.Wait()
 
 	//now client2 should get a message
-	got := msg2
+	got := latestMsg2
 	want := reqBody["message"]
 
 	if got != want {
 		t.Errorf("got %q but wanted %q", got, want)
 	}
+}
+
+func createTestClient(t *testing.T, testServer *httptest.Server, cname string) *websocket.Conn {
+	url := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/" + cname
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		t.Fatal("dialError: ", err)
+	}
+
+	return conn
 }
 
 func errSkip(t *testing.T, err error) {
