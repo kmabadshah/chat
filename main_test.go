@@ -79,45 +79,57 @@ func TestTwoClients(t *testing.T) {
 	cl2 := createTestClient(t, testServer, "client2")
 	defer cl2.Close()
 
-	// read time limit
-	err := cl2.SetReadDeadline(time.Now().Add(time.Millisecond))
-	errSkip(t, err)
-
-	var latestMsg2 string
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func(msg2 *string) {
-		for {
-			_, msg, err := cl2.ReadMessage()
-			if err != nil {
-				break
-			}
-
-			*msg2 = string(msg)
-		}
-
-		wg.Done()
-	}(&latestMsg2)
-
-	// send message to client2 from client1
-	reqBody := map[string]string{
+	testClientMsg(t, "client1msg -> client2", cl1, map[string]string{
 		"receiver": "client2",
 		"message":  "Hello client2",
-	}
-	encodedReqBody, _ := json.Marshal(reqBody)
-	err = cl1.WriteMessage(websocket.TextMessage, encodedReqBody)
-	errSkip(t, err)
+	}, cl2)
 
-	wg.Wait()
+	testClientMsg(t, "client2msg -> client1", cl2, map[string]string{
+		"receiver": "client1",
+		"message":  "Hello client1",
+	}, cl1)
+}
 
-	//now client2 should get a message
-	got := latestMsg2
-	want := reqBody["message"]
+func testClientMsg(t *testing.T, tname string, clSend *websocket.Conn, reqBody map[string]string, clRecv *websocket.Conn) {
+	t.Run(tname, func(t *testing.T) {
+		// read time limit
+		err := clRecv.SetReadDeadline(time.Now().Add(time.Millisecond))
+		errSkip(t, err)
 
-	if got != want {
-		t.Errorf("got %q but wanted %q", got, want)
-	}
+		var latestMsgRecv string
+		var wgRecv sync.WaitGroup
+		wgRecv.Add(1)
+
+		go func(latestMsgRecv *string) {
+			for {
+				_, msg, err := clRecv.ReadMessage()
+				if err != nil {
+					break
+				}
+
+				*latestMsgRecv = string(msg)
+			}
+
+			wgRecv.Done()
+		}(&latestMsgRecv)
+
+		for i := 0; i < 10; i++ {
+			// send message to clRecv from clSend
+			encodedReqBody, _ := json.Marshal(reqBody)
+			err = clSend.WriteMessage(websocket.TextMessage, encodedReqBody)
+			errSkip(t, err)
+
+			wgRecv.Wait()
+
+			//now clientRecv should get a message
+			got := latestMsgRecv
+			want := reqBody["message"]
+
+			if got != want {
+				t.Errorf("got %q but wanted %q", got, want)
+			}
+		}
+	})
 }
 
 func createTestClient(t *testing.T, testServer *httptest.Server, cname string) *websocket.Conn {
