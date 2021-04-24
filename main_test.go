@@ -1,8 +1,11 @@
 package chat
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
@@ -13,8 +16,8 @@ import (
 )
 
 func TestOneClient(t *testing.T) {
-	x := newX()
-	testServer := httptest.NewServer(x.router)
+	hub := newHub()
+	testServer := httptest.NewServer(hub.router)
 	defer testServer.Close()
 
 	url := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/client1"
@@ -22,11 +25,10 @@ func TestOneClient(t *testing.T) {
 	t.Run("client added after successful connection", func(t *testing.T) {
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 		if err != nil {
-
 			t.Fatal("dialErr: ", err)
 		}
 
-		got := len(x.clients)
+		got := len(hub.clients)
 		want := 1
 
 		if got != want {
@@ -54,7 +56,7 @@ func TestOneClient(t *testing.T) {
 			}
 
 			time.Sleep(time.Millisecond)
-			got = len(x.clients)
+			got = len(hub.clients)
 			want = 0
 
 			if got != want {
@@ -67,8 +69,8 @@ func TestOneClient(t *testing.T) {
 }
 
 func TestTwoClients(t *testing.T) {
-	x := newX()
-	testServer := httptest.NewServer(x.router)
+	hub := newHub()
+	testServer := httptest.NewServer(hub.router)
 	defer testServer.Close()
 
 	// client 1
@@ -90,7 +92,54 @@ func TestTwoClients(t *testing.T) {
 	}, cl1)
 }
 
+func TestUsersEndpoint(t *testing.T) {
+	clearDB(t)
+	defer clearDB(t)
+
+	t.Run("create a user", func(t *testing.T) {
+		hub := newHub()
+		testServer := httptest.NewServer(hub.router)
+		url := testServer.URL + "/users/"
+		defer testServer.Close()
+
+		// POST the user
+		reqBody := map[string]string{
+			"uname": "adnan",
+			"pass":  "badshah",
+		}
+		encodedReqBody, err := json.Marshal(reqBody)
+		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
+
+		// get the response
+		resBody, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var decodedResBody map[string]interface{}
+		json.Unmarshal(resBody, &decodedResBody)
+
+		// check the response
+		if decodedResBody["uname"] != reqBody["uname"] || decodedResBody["pass"] != reqBody["pass"] {
+			t.Errorf("invalid res body, got %#v, wanted %#v", decodedResBody, reqBody)
+		}
+	})
+
+	// GET /users/name
+	//url += uname
+	//res, err := http.Get(url)
+	//if err != nil { t.Fatal(err) }
+	//
+	//// decode
+	//resBody, err := ioutil.ReadAll(res.Body)
+	//var decodedResBody map[string]interface{}
+	//json.Unmarshal(resBody, &decodedResBody)
+
+}
+
 func testClientMsg(t *testing.T, tname string, clSend *websocket.Conn, reqBody map[string]string, clRecv *websocket.Conn) {
+	clearDB(t)
+	defer clearDB(t)
+
 	t.Run(tname, func(t *testing.T) {
 		// read time limit
 		err := clRecv.SetReadDeadline(time.Now().Add(time.Millisecond))
@@ -100,18 +149,18 @@ func testClientMsg(t *testing.T, tname string, clSend *websocket.Conn, reqBody m
 		var wgRecv sync.WaitGroup
 		wgRecv.Add(1)
 
-		go func(latestMsgRecv *string) {
+		go func() {
 			for {
 				_, msg, err := clRecv.ReadMessage()
 				if err != nil {
 					break
 				}
 
-				*latestMsgRecv = string(msg)
+				latestMsgRecv = string(msg)
 			}
 
 			wgRecv.Done()
-		}(&latestMsgRecv)
+		}()
 
 		for i := 0; i < 10; i++ {
 			// send message to clRecv from clSend
@@ -146,5 +195,15 @@ func errSkip(t *testing.T, err error) {
 	if err != nil {
 		fmt.Println(err)
 		t.Skip()
+	}
+}
+
+func clearDB(t *testing.T) {
+	// clean the user table
+	_, err := db.Model((*User)(nil)).Exec(`
+		delete from users
+	`)
+	if err != nil {
+		t.Fatal(err)
 	}
 }

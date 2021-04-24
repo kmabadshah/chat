@@ -1,8 +1,11 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-pg/pg/v10"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"reflect"
@@ -18,19 +21,71 @@ type Client struct {
 	name string
 }
 
-type X struct {
+type Hub struct {
 	clients []Client
 	router  http.Handler
 }
 
-func init() {
-	log.SetFlags(0)
+type User struct {
+	ID    uint   `json:"id"`
+	Uname string `json:"uname"`
+	Pass  string `json:"pass"`
 }
 
-func newX() *X {
-	x := X{}
+var db = pg.Connect(&pg.Options{
+	Addr:     ":5432",
+	User:     "kmab",
+	Password: "kmab",
+	Database: "chat_test",
+})
+
+func init() {
+	ctx := context.Background()
+	if err := db.Ping(ctx); err != nil {
+		panic(err)
+	}
+}
+
+func newHub() *Hub {
+	hub := Hub{}
 	upgrader := websocket.Upgrader{}
 	router := mux.NewRouter()
+
+	//router.PathPrefix("/users/{name}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	//	// get the user with {name}
+	//	uname := mux.Vars()["name"]
+	//	// query the db
+	//
+	//})
+	router.PathPrefix("/users").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// get the data from req body and decode
+		reqBody, err := ioutil.ReadAll(r.Body)
+		var decodedReqBody map[string]interface{}
+		err = json.Unmarshal(reqBody, &decodedReqBody)
+		isValidBody := decodedReqBody["uname"] != "" || decodedReqBody["pass"] != ""
+		if err != nil || !isValidBody {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte("invalid req body, must contain a uname and pass field"))
+			return
+		}
+
+		// create the user
+		user := User{
+			Uname: decodedReqBody["uname"].(string),
+			Pass:  decodedReqBody["pass"].(string),
+		}
+		res, err := db.Model(&user).Insert()
+		if err != nil || res.RowsAffected() != 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println("insertErr: ", err)
+			return
+		}
+
+		// encode and send the user
+		resBody, _ := json.Marshal(user)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(resBody)
+	})
 	router.PathPrefix("/connect/{name}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := mux.Vars(r)["name"]
 
@@ -44,7 +99,7 @@ func newX() *X {
 
 		// add the client
 		clMain := Client{conn: conn, name: name}
-		x.clients = append(x.clients, clMain)
+		hub.clients = append(hub.clients, clMain)
 
 		// notify the client
 		err = conn.WriteMessage(websocket.TextMessage, []byte("connection successful"))
@@ -66,7 +121,7 @@ func newX() *X {
 
 				// when msg recv from client1 send it to client2
 				receiver := decodedMsg["receiver"]
-				for _, client := range x.clients {
+				for _, client := range hub.clients {
 					if client.name == receiver {
 						err = client.conn.WriteMessage(websocket.TextMessage, []byte(decodedMsg["message"]))
 						if assertError(err) {
@@ -78,9 +133,9 @@ func newX() *X {
 
 			// remove the client on disconnect
 			if err != nil {
-				for i, client := range x.clients {
+				for i, client := range hub.clients {
 					if reflect.DeepEqual(client.conn, conn) {
-						x.clients = append(x.clients[:i], x.clients[i+1:]...)
+						hub.clients = append(hub.clients[:i], hub.clients[i+1:]...)
 					}
 				}
 
@@ -91,9 +146,9 @@ func newX() *X {
 
 	})
 
-	x.router = router
+	hub.router = router
 
-	return &x
+	return &hub
 }
 
 func prettyLog(v ...interface{}) {
@@ -115,4 +170,47 @@ func assertError(err error) bool {
 	}
 
 	return false
+}
+
+func main() {
+	db := pg.Connect(&pg.Options{
+		Addr:     ":5432",
+		User:     "kmab",
+		Password: "kmab",
+		Database: "chat_test",
+	})
+	defer db.Close()
+
+	ctx := context.Background()
+	if err := db.Ping(ctx); err != nil {
+		panic(err)
+	}
+
+	// delete all users
+	_, err := db.Model((*User)(nil)).Exec(`
+	    delete from users
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	// insert a user
+	user1 := &User{
+		Uname: "adnan",
+		Pass:  "badshah",
+	}
+	_, err = db.Model(user1).Insert()
+	if err != nil {
+		panic(err)
+	}
+
+	// get the user
+	var user User
+	db.Model(&user).Where(`id=?`, user1.ID).Select()
+
+	fmt.Println(user)
+}
+
+func init() {
+	log.SetFlags(0)
 }
