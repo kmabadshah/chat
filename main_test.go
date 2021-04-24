@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -15,11 +16,20 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestOneClient(t *testing.T) {
-	hub := newHub()
-	testServer := httptest.NewServer(hub.router)
-	defer testServer.Close()
+var hub *Hub
+var testServer *httptest.Server
 
+func TestMain(m *testing.M) {
+	hub = newHub()
+	testServer = httptest.NewServer(hub.router)
+
+	code := m.Run()
+	testServer.Close()
+
+	os.Exit(code)
+}
+
+func TestOneClient(t *testing.T) {
 	url := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/client1"
 
 	t.Run("client added after successful connection", func(t *testing.T) {
@@ -69,10 +79,6 @@ func TestOneClient(t *testing.T) {
 }
 
 func TestTwoClients(t *testing.T) {
-	hub := newHub()
-	testServer := httptest.NewServer(hub.router)
-	defer testServer.Close()
-
 	// client 1
 	cl1 := createTestClient(t, testServer, "client1")
 	defer cl1.Close()
@@ -96,27 +102,30 @@ func TestUsersEndpoint(t *testing.T) {
 	clearDB(t)
 	defer clearDB(t)
 
+	hub := newHub()
+	testServer := httptest.NewServer(hub.router)
+	defer testServer.Close()
+
+	reqBody := map[string]string{
+		"uname": "adnan",
+		"pass":  "badshah",
+	}
+
 	t.Run("create a user", func(t *testing.T) {
-		hub := newHub()
-		testServer := httptest.NewServer(hub.router)
 		url := testServer.URL + "/users/"
-		defer testServer.Close()
 
 		// POST the user
-		reqBody := map[string]string{
-			"uname": "adnan",
-			"pass":  "badshah",
-		}
-		encodedReqBody, err := json.Marshal(reqBody)
+		encodedReqBody, _ := json.Marshal(reqBody)
 		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
+		errSkip(t, err)
 
 		// get the response
 		resBody, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
+		errSkip(t, err)
+
 		var decodedResBody map[string]interface{}
-		json.Unmarshal(resBody, &decodedResBody)
+		err = json.Unmarshal(resBody, &decodedResBody)
+		errSkip(t, err)
 
 		// check the response
 		if decodedResBody["uname"] != reqBody["uname"] || decodedResBody["pass"] != reqBody["pass"] {
@@ -124,16 +133,26 @@ func TestUsersEndpoint(t *testing.T) {
 		}
 	})
 
-	// GET /users/name
-	//url += uname
-	//res, err := http.Get(url)
-	//if err != nil { t.Fatal(err) }
-	//
-	//// decode
-	//resBody, err := ioutil.ReadAll(res.Body)
-	//var decodedResBody map[string]interface{}
-	//json.Unmarshal(resBody, &decodedResBody)
+	t.Run("get a user", func(t *testing.T) {
+		url := testServer.URL + "/users/" + reqBody["uname"]
 
+		res, err := http.Get(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// decode
+		resBody, err := ioutil.ReadAll(res.Body)
+		errSkip(t, err)
+
+		var decodedResBody map[string]interface{}
+		err = json.Unmarshal(resBody, &decodedResBody)
+		errSkip(t, err)
+
+		if decodedResBody["uname"] != reqBody["uname"] || decodedResBody["pass"] != reqBody["pass"] {
+			t.Errorf("did not get the user created earlier")
+		}
+	})
 }
 
 func testClientMsg(t *testing.T, tname string, clSend *websocket.Conn, reqBody map[string]string, clRecv *websocket.Conn) {
@@ -192,6 +211,7 @@ func createTestClient(t *testing.T, testServer *httptest.Server, cname string) *
 }
 
 func errSkip(t *testing.T, err error) {
+	t.Helper()
 	if err != nil {
 		fmt.Println(err)
 		t.Skip()
@@ -199,6 +219,7 @@ func errSkip(t *testing.T, err error) {
 }
 
 func clearDB(t *testing.T) {
+	t.Helper()
 	// clean the user table
 	_, err := db.Model((*User)(nil)).Exec(`
 		delete from users

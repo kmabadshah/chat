@@ -51,12 +51,27 @@ func newHub() *Hub {
 	upgrader := websocket.Upgrader{}
 	router := mux.NewRouter()
 
-	//router.PathPrefix("/users/{name}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	//	// get the user with {name}
-	//	uname := mux.Vars()["name"]
-	//	// query the db
-	//
-	//})
+	router.PathPrefix("/users/{uname}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// get the user with {name}
+		uname := mux.Vars(r)["uname"]
+		// query the db
+		var user User
+		err := db.Model(&user).Where("uname=?", uname).Select()
+		if assertError(err) {
+			return
+		}
+
+		if user.ID == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte("invalid username"))
+			return
+		}
+
+		// encode and send user
+		encodedResBody, err := json.Marshal(user)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(encodedResBody)
+	})
 	router.PathPrefix("/users").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get the data from req body and decode
 		reqBody, err := ioutil.ReadAll(r.Body)
