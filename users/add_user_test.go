@@ -10,8 +10,7 @@ import (
 )
 
 func TestAddUser(t *testing.T) {
-	_, err := db.Exec(`delete from users`)
-	assertTestErr(t, err)
+	clearUserTable()
 
 	router := newRouter()
 	testServer := httptest.NewServer(router)
@@ -35,14 +34,10 @@ func TestAddUser(t *testing.T) {
 	err = json.Unmarshal(resBody, &decodedResBody)
 	assertTestErr(t, err)
 
-	t.Run("status code and body", func(t *testing.T) {
-		gotStatus := res.StatusCode
-		wantStatus := http.StatusOK
-
-		if gotStatus != wantStatus {
-			t.Errorf("invalid code, wanted %#v, got %#v", wantStatus, gotStatus)
-		}
-
+	t.Run("check status code", func(t *testing.T) {
+		assertTestStatusCode(t, res.StatusCode, http.StatusOK)
+	})
+	t.Run("check res body", func(t *testing.T) {
 		for k, v := range reqBody {
 			if decodedResBody[k] != v {
 				t.Errorf("invalid resp, got %#v, wanted %#v", decodedResBody, reqBody)

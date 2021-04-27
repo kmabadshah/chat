@@ -1,1 +1,4 @@
-package chat
+package main
+
+func main() {
+}
