@@ -45,8 +45,18 @@ func TestAddUser(t *testing.T) {
 
 		for k, v := range reqBody {
 			if decodedResBody[k] != v {
-				t.Fatalf("invalid resp, got %#v, wanted %#v", decodedResBody, reqBody)
+				t.Errorf("invalid resp, got %#v, wanted %#v", decodedResBody, reqBody)
 			}
+		}
+	})
+
+	t.Run("check if user stored in db", func(t *testing.T) {
+		var users []User
+		err := db.Model(&users).Select()
+		assertTestErr(t, err)
+
+		if len(users) != 1 || users[0].Uname != reqBody["uname"] {
+			t.Errorf("user not stored in db")
 		}
 	})
 }
