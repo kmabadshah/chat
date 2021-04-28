@@ -29,6 +29,7 @@ func newRouter() *mux.Router {
 	router.Path("/users").Methods("POST").HandlerFunc(addUser)
 	router.Path("/users/{id}").Methods("GET").HandlerFunc(getUser)
 	router.Path("/users").Methods("GET").HandlerFunc(getUsers)
+	router.Path("/users/{id}").Methods("PUT").HandlerFunc(updateUser)
 
 	return router
 }
