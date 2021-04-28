@@ -23,7 +23,7 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 
 	var decodedReqBody map[string]interface{}
 	err = json.Unmarshal(reqBody, &decodedReqBody)
-	if err != nil || decodedReqBody["pass"] == "" {
+	if err != nil || (decodedReqBody["pass"] == nil && decodedReqBody["uname"] == nil) {
 		log.Println(err)
 
 		w.WriteHeader(http.StatusBadRequest)

@@ -102,4 +102,32 @@ func TestUpdateUser(t *testing.T) {
 			t.Errorf("invalid resBody, wanted %#v, got %#v", want, got)
 		}
 	})
+
+	t.Run("reqBody does not contain a valid uname or pass field", func(t *testing.T) {
+		reqBody, err := json.Marshal(map[int]int{
+			10: 20,
+			20: 30,
+		})
+		assertTestErr(t, err)
+
+		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
+		req, err := http.NewRequest("PUT", url, bytes.NewReader(reqBody))
+		assertTestErr(t, err)
+
+		httpClient := http.Client{}
+		res, err := httpClient.Do(req)
+		assertTestErr(t, err)
+
+		assertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
+
+		resBody, err := ioutil.ReadAll(res.Body)
+		assertTestErr(t, err)
+
+		got := string(resBody)
+		want := "invalid body, must contain a valid uname and/or pass field"
+
+		if got != want {
+			t.Errorf("invalid resBody, wanted %#v, got %#v", want, got)
+		}
+	})
 }
