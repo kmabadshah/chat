@@ -2,9 +2,9 @@ package users
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-pg/pg/v10"
 	"github.com/gorilla/mux"
+	"log"
 	"math/rand"
 	"net/http"
 	"testing"
@@ -35,6 +35,8 @@ func newRouter() *mux.Router {
 }
 
 func init() {
+	log.SetFlags(log.Lshortfile)
+
 	ctx := context.Background()
 	if err := db.Ping(ctx); err != nil {
 		panic(err)
@@ -51,7 +53,7 @@ func clearUserTable() {
 func assertError(err error, w *http.ResponseWriter, statusCode int) bool {
 	if err != nil {
 		(*w).WriteHeader(statusCode)
-		fmt.Println(err)
+		log.Println(err)
 		return true
 	}
 

@@ -2,51 +2,59 @@ package users
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
+var errUnameInUse = "that username is already in use"
+
 func updateUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
+
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
+
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("invalid body, must contain a valid uname and/or pass field"))
 		return
 	}
 
-	var decodedReqBody map[string]string
+	var decodedReqBody map[string]interface{}
 	err = json.Unmarshal(reqBody, &decodedReqBody)
 	if err != nil || decodedReqBody["pass"] == "" {
-		fmt.Println(err)
+		log.Println(err)
+
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("invalid body, must contain a valid uname and/or pass field"))
 		return
 	}
 
+	// check if the uname exists
+	var userCheck User
+	err = db.Model(&userCheck).Where("uname=?", decodedReqBody["uname"]).Select()
+	if userCheck.ID != 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(errUnameInUse))
+		return
+	}
+
+	// update the user
 	var user User
 	id := mux.Vars(r)["id"]
-	err = mapstructure.Decode(decodedReqBody, &user)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("invalid body, must contain a valid uname and/or pass field"))
-		return
-	}
-
-	res, err := db.Model(&user).Column("pass").Where("id=?", id).Update()
+	res, err := db.Model(&decodedReqBody).TableExpr("users").Where("id=?", id).Update()
 	if err != nil || res.RowsAffected() != 1 {
-		fmt.Println(err)
+		log.Println(err)
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	err = db.Model(&user).Where("id=?", id).Select()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

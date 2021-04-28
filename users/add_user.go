@@ -9,6 +9,7 @@ import (
 
 func addUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
+
 	if assertRandomError(err, &w) {
 		return
 	}
