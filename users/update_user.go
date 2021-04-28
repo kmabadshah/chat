@@ -9,6 +9,7 @@ import (
 )
 
 var errUnameInUse = "that username is already in use"
+var errUpdateBody = "invalid body, must contain a valid uname and/or pass field"
 
 func updateUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -17,7 +18,7 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("invalid body, must contain a valid uname and/or pass field"))
+		w.Write([]byte(errUpdateBody))
 		return
 	}
 
@@ -27,7 +28,7 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("invalid body, must contain a valid uname and/or pass field"))
+		w.Write([]byte(errUpdateBody))
 		return
 	}
 

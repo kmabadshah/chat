@@ -19,46 +19,46 @@ func TestUpdateUser(t *testing.T) {
 
 	user := createTestUser(t)
 
-	t.Run("update password", func(t *testing.T) {
-		reqBody, err := json.Marshal(map[string]string{
-			"pass": "badshah",
-		})
+	sendUpdateReq := func(t *testing.T, reqBody interface{}) *http.Response {
+		encodedReqBody, err := json.Marshal(reqBody)
 		assertTestErr(t, err)
 
 		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
-		req, err := http.NewRequest("PUT", url, bytes.NewReader(reqBody))
+		req, err := http.NewRequest("PUT", url, bytes.NewReader(encodedReqBody))
 		assertTestErr(t, err)
 
 		httpClient := http.Client{}
 		res, err := httpClient.Do(req)
 		assertTestErr(t, err)
 
+		return res
+	}
+
+	t.Run("update password", func(t *testing.T) {
+		reqBody := map[string]interface{}{
+			"pass": "badshah",
+		}
+		res := sendUpdateReq(t, reqBody)
+
 		assertTestStatusCode(t, res.StatusCode, http.StatusOK)
 
 		resBody, err := ioutil.ReadAll(res.Body)
 		assertTestErr(t, err)
+
 		var decodedResBody map[string]interface{}
 		err = json.Unmarshal(resBody, &decodedResBody)
 		assertTestErr(t, err)
 
-		if decodedResBody["pass"] != "badshah" || decodedResBody["uname"] != user.Uname {
+		if decodedResBody["pass"] != reqBody["pass"] || decodedResBody["uname"] != user.Uname {
 			t.Errorf("user not updated, got %#v", decodedResBody)
 		}
 	})
 
 	t.Run("change username to something that is not in use", func(t *testing.T) {
-		reqBody, err := json.Marshal(map[string]string{
+		reqBody := map[string]interface{}{
 			"uname": "adnan",
-		})
-		assertTestErr(t, err)
-
-		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
-		req, err := http.NewRequest("PUT", url, bytes.NewReader(reqBody))
-		assertTestErr(t, err)
-
-		httpClient := http.Client{}
-		res, err := httpClient.Do(req)
-		assertTestErr(t, err)
+		}
+		res := sendUpdateReq(t, reqBody)
 
 		assertTestStatusCode(t, res.StatusCode, http.StatusOK)
 
@@ -69,7 +69,7 @@ func TestUpdateUser(t *testing.T) {
 		err = json.Unmarshal(resBody, &decodedResBody)
 		assertTestErr(t, err)
 
-		if decodedResBody["uname"] != "adnan" || decodedResBody["pass"] != "badshah" {
+		if decodedResBody["uname"] != reqBody["uname"] || decodedResBody["pass"] != "badshah" {
 			t.Errorf("user not updated, got %#v", decodedResBody)
 		}
 	})
@@ -77,18 +77,10 @@ func TestUpdateUser(t *testing.T) {
 	t.Run("change username to something that is in use", func(t *testing.T) {
 		user2 := createTestUser(t)
 
-		reqBody, err := json.Marshal(map[string]string{
+		reqBody := map[string]interface{}{
 			"uname": user2.Uname,
-		})
-		assertTestErr(t, err)
-
-		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
-		req, err := http.NewRequest("PUT", url, bytes.NewReader(reqBody))
-		assertTestErr(t, err)
-
-		httpClient := http.Client{}
-		res, err := httpClient.Do(req)
-		assertTestErr(t, err)
+		}
+		res := sendUpdateReq(t, reqBody)
 
 		assertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
 
@@ -97,26 +89,17 @@ func TestUpdateUser(t *testing.T) {
 
 		got := string(resBody)
 		want := errUnameInUse
-
 		if got != want {
 			t.Errorf("invalid resBody, wanted %#v, got %#v", want, got)
 		}
 	})
 
 	t.Run("reqBody does not contain a valid uname or pass field", func(t *testing.T) {
-		reqBody, err := json.Marshal(map[int]int{
+		reqBody := map[int]int{
 			10: 20,
 			20: 30,
-		})
-		assertTestErr(t, err)
-
-		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
-		req, err := http.NewRequest("PUT", url, bytes.NewReader(reqBody))
-		assertTestErr(t, err)
-
-		httpClient := http.Client{}
-		res, err := httpClient.Do(req)
-		assertTestErr(t, err)
+		}
+		res := sendUpdateReq(t, reqBody)
 
 		assertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
 
@@ -124,8 +107,7 @@ func TestUpdateUser(t *testing.T) {
 		assertTestErr(t, err)
 
 		got := string(resBody)
-		want := "invalid body, must contain a valid uname and/or pass field"
-
+		want := errUpdateBody
 		if got != want {
 			t.Errorf("invalid resBody, wanted %#v, got %#v", want, got)
 		}
