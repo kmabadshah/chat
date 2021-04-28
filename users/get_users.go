@@ -2,21 +2,22 @@ package users
 
 import (
 	"encoding/json"
+	"github.com/kmabadshah/chat"
 	"net/http"
 )
 
-func getUsers(w http.ResponseWriter, r *http.Request) {
+func GetUsers(w http.ResponseWriter, r *http.Request) {
 	var users []User
-	err := db.Model(&users).Select()
-	assertRandomError(err, &w)
+	err := chat.DB.Model(&users).Select()
+	chat.AssertRandomError(err, &w)
 
 	encodedResBody, err := json.Marshal(users)
-	if assertRandomError(err, &w) {
+	if chat.AssertRandomError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if assertRandomError(err, &w) {
+	if chat.AssertRandomError(err, &w) {
 		return
 	}
 }

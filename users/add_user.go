@@ -3,14 +3,15 @@ package users
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kmabadshah/chat"
 	"io/ioutil"
 	"net/http"
 )
 
-func addUser(w http.ResponseWriter, r *http.Request) {
+func AddUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
 
-	if assertRandomError(err, &w) {
+	if chat.AssertRandomError(err, &w) {
 		return
 	}
 
@@ -25,7 +26,7 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 		Uname: decodedReqBody["uname"],
 		Pass:  decodedReqBody["pass"],
 	}
-	res, err := db.Model(&user).Insert()
+	res, err := chat.DB.Model(&user).Insert()
 	if err != nil || res.RowsAffected() != 1 || user.ID == 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Println(err)
@@ -33,12 +34,12 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(user)
-	if assertRandomError(err, &w) {
+	if chat.AssertRandomError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if assertRandomError(err, &w) {
+	if chat.AssertRandomError(err, &w) {
 		return
 	}
 }

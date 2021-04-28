@@ -2,6 +2,7 @@ package users
 
 import (
 	"encoding/json"
+	"github.com/kmabadshah/chat"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -9,30 +10,30 @@ import (
 )
 
 func TestGetUsers(t *testing.T) {
-	clearUserTable()
+	chat.ClearAllTables()
 
 	user1 := createTestUser(t)
 	user2 := createTestUser(t)
 
-	router := newRouter()
+	router := NewRouter()
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
 	url := testServer.URL + "/users"
 	res, err := http.Get(url)
-	assertTestErr(t, err)
+	chat.AssertTestErr(t, err)
 
 	resBody, err := ioutil.ReadAll(res.Body)
-	assertTestErr(t, err)
+	chat.AssertTestErr(t, err)
 
 	t.Run("check code", func(t *testing.T) {
-		assertTestStatusCode(t, res.StatusCode, http.StatusOK)
+		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 	})
 
 	t.Run("check body", func(t *testing.T) {
 		var decodedResBody []map[string]interface{}
 		err = json.Unmarshal(resBody, &decodedResBody)
-		assertTestErr(t, err)
+		chat.AssertTestErr(t, err)
 
 		if len(decodedResBody) != 2 ||
 			decodedResBody[0]["uname"] != user1.Uname ||

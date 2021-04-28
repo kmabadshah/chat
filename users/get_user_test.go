@@ -2,6 +2,7 @@ package users
 
 import (
 	"encoding/json"
+	"github.com/kmabadshah/chat"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,30 +11,30 @@ import (
 )
 
 func TestGetUser(t *testing.T) {
-	clearUserTable()
+	chat.ClearAllTables()
 
 	user := createTestUser(t)
 
-	router := newRouter()
+	router := NewRouter()
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
 	t.Run("valid id", func(t *testing.T) {
 		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
 		res, err := http.Get(url)
-		assertTestErr(t, err)
+		chat.AssertTestErr(t, err)
 
 		t.Run("check code", func(t *testing.T) {
-			assertTestStatusCode(t, res.StatusCode, http.StatusOK)
+			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 		})
 
 		t.Run("check res body", func(t *testing.T) {
 			resBody, err := ioutil.ReadAll(res.Body)
-			assertTestErr(t, err)
+			chat.AssertTestErr(t, err)
 
 			var decodedResBody map[string]interface{}
 			err = json.Unmarshal(resBody, &decodedResBody)
-			assertTestErr(t, err)
+			chat.AssertTestErr(t, err)
 
 			if decodedResBody["uname"] != user.Uname ||
 				decodedResBody["pass"] != user.Pass {
@@ -46,10 +47,10 @@ func TestGetUser(t *testing.T) {
 	t.Run("invalid id", func(t *testing.T) {
 		url := testServer.URL + "/users/" + strconv.Itoa(-1)
 		res, err := http.Get(url)
-		assertTestErr(t, err)
+		chat.AssertTestErr(t, err)
 
 		t.Run("check code", func(t *testing.T) {
-			assertTestStatusCode(t, res.StatusCode, http.StatusNotFound)
+			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusNotFound)
 		})
 	})
 }

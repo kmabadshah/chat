@@ -3,6 +3,7 @@ package users
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/kmabadshah/chat"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 var errUnameInUse = "that username is already in use"
 var errUpdateBody = "invalid body, must contain a valid uname and/or pass field"
 
-func updateUser(w http.ResponseWriter, r *http.Request) {
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -34,7 +35,7 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 
 	// check if the uname exists
 	var userCheck User
-	err = db.Model(&userCheck).Where("uname=?", decodedReqBody["uname"]).Select()
+	err = chat.DB.Model(&userCheck).Where("uname=?", decodedReqBody["uname"]).Select()
 	if userCheck.ID != 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(errUnameInUse))
@@ -44,7 +45,7 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	// update the user
 	var user User
 	id := mux.Vars(r)["id"]
-	res, err := db.Model(&decodedReqBody).TableExpr("users").Where("id=?", id).Update()
+	res, err := chat.DB.Model(&decodedReqBody).TableExpr("users").Where("id=?", id).Update()
 	if err != nil || res.RowsAffected() != 1 {
 		log.Println(err)
 
@@ -52,7 +53,7 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = db.Model(&user).Where("id=?", id).Select()
+	err = chat.DB.Model(&user).Where("id=?", id).Select()
 	if err != nil {
 		log.Println(err)
 
@@ -61,12 +62,12 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(user)
-	if assertRandomError(err, &w) {
+	if chat.AssertRandomError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if assertRandomError(err, &w) {
+	if chat.AssertRandomError(err, &w) {
 		return
 	}
 }
