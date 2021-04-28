@@ -12,12 +12,7 @@ import (
 func TestGetUser(t *testing.T) {
 	clearUserTable()
 
-	user := User{
-		Uname: "adnan1",
-		Pass:  "badshah1",
-	}
-	_, err := db.Model(&user).Insert()
-	assertTestErr(t, err)
+	user := createTestUser(t)
 
 	router := newRouter()
 	testServer := httptest.NewServer(router)

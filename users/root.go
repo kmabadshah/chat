@@ -57,7 +57,7 @@ func assertError(err error, w *http.ResponseWriter, statusCode int) bool {
 	return false
 }
 
-func RandSeq(n int) string {
+func randSeq(n int) string {
 	rand.Seed(time.Now().UnixNano())
 	var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -66,6 +66,18 @@ func RandSeq(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func createTestUser(t *testing.T) User {
+	user := User{
+		Uname: randSeq(5),
+		Pass:  randSeq(5),
+	}
+
+	_, err := db.Model(&user).Insert()
+	assertTestErr(t, err)
+
+	return user
 }
 
 func assertTestErr(t *testing.T, err error) {

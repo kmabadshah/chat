@@ -11,18 +11,8 @@ import (
 func TestGetUsers(t *testing.T) {
 	clearUserTable()
 
-	user1 := User{
-		Uname: "adnan1",
-		Pass:  "badshah1",
-	}
-	user2 := User{
-		Uname: "adnan2",
-		Pass:  "badshah2",
-	}
-	_, err := db.Model(&user1).Insert()
-	assertTestErr(t, err)
-	_, err = db.Model(&user2).Insert()
-	assertTestErr(t, err)
+	user1 := createTestUser(t)
+	user2 := createTestUser(t)
 
 	router := newRouter()
 	testServer := httptest.NewServer(router)
