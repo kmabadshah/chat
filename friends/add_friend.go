@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/kmabadshah/chat"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -38,8 +37,8 @@ func AddFriend(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := chat.DB.Model(&friend).Insert()
 	if err != nil || res.RowsAffected() != 1 {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(errReqBody))
 		return
 	}
 }
