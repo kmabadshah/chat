@@ -23,19 +23,33 @@ func TestAddFriend(t *testing.T) {
 
 	url := testServer.URL + "/friends"
 
-	t.Run("valid req body", func(t *testing.T) {
-		reqBody := map[string]int{
-			"srcID": user1.ID,
-			"tarID": user2.ID,
-		}
-
+	sendAddFriendReq := func(t *testing.T, reqBody interface{}, wantStatus int, wantBody string) { // <-- refactor
 		encodedReqBody, err := json.Marshal(reqBody)
 		chat.AssertTestErr(t, err)
 
 		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
 		chat.AssertTestErr(t, err)
 
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+		chat.AssertTestStatusCode(t, res.StatusCode, wantStatus)
+
+		if wantBody != "" {
+			resBody, err := ioutil.ReadAll(res.Body)
+			chat.AssertTestErr(t, err)
+
+			gotBody := string(resBody)
+			if gotBody != wantBody {
+				t.Errorf("invalid resp body, wanted %#v, gotBody %#v", wantBody, gotBody)
+			}
+		}
+	}
+
+	t.Run("valid req body", func(t *testing.T) {
+		reqBody := map[string]int{
+			"srcID": user1.ID,
+			"tarID": user2.ID,
+		}
+
+		sendAddFriendReq(t, reqBody, http.StatusOK, "")
 	})
 
 	t.Run("invalid body syntax", func(t *testing.T) {
@@ -44,23 +58,7 @@ func TestAddFriend(t *testing.T) {
 			30: 40,
 		}
 
-		encodedReqBody, err := json.Marshal(reqBody)
-		chat.AssertTestErr(t, err)
-
-		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
-		chat.AssertTestErr(t, err)
-
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
-
-		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
-
-		got := string(resBody)
-		want := errReqBody
-
-		if got != want {
-			t.Errorf("invalid resp body, wanted %#v, got %#v", want, got)
-		}
+		sendAddFriendReq(t, reqBody, http.StatusBadRequest, errReqBody)
 	})
 
 	t.Run("invalid srcID field", func(t *testing.T) {
@@ -69,22 +67,6 @@ func TestAddFriend(t *testing.T) {
 			"tarID": -2,
 		}
 
-		encodedReqBody, err := json.Marshal(reqBody)
-		chat.AssertTestErr(t, err)
-
-		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
-		chat.AssertTestErr(t, err)
-
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
-
-		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
-
-		got := string(resBody)
-		want := errReqBody
-
-		if got != want {
-			t.Errorf("invalid resp body, wanted %#v, got %#v", want, got)
-		}
+		sendAddFriendReq(t, reqBody, http.StatusBadRequest, errReqBody)
 	})
 }
