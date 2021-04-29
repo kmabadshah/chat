@@ -13,8 +13,10 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 
 	var friends []Friend
 	err := chat.DB.Model(&friends).Where("src_id=?", id).WhereOr("tar_id=?", id).Select()
-	if err != nil {
-		log.Println(err)
+	if err != nil || len(friends) == 0 {
+		log.Print(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	encodedResBody, err := json.Marshal(friends)
