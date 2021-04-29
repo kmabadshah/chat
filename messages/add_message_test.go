@@ -49,7 +49,7 @@ func TestAddMessage(t *testing.T) {
 	})
 
 	t.Run("invalid req body", func(t *testing.T) {
-		t.Run("with valid json binary", func(t *testing.T) {
+		t.Run("invalid syntax", func(t *testing.T) {
 			reqBody := map[string]interface{}{
 				"srcID": user1.ID,
 				"tarID": user2.ID,
@@ -76,9 +76,16 @@ func TestAddMessage(t *testing.T) {
 			}
 		})
 
-		t.Run("with non json binary", func(t *testing.T) {
-			reqBody := []byte("hello world")
-			res, err := http.Post(url, "application/json", bytes.NewReader(reqBody))
+		t.Run("valid syntax but invalid data", func(t *testing.T) {
+			reqBody := map[string]interface{}{
+				"srcID": -1,
+				"tarID": -2,
+				"text":  "hello world",
+			}
+			encodedReqBody, err := json.Marshal(reqBody)
+			chat.AssertTestErr(t, err)
+
+			res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
 			chat.AssertTestErr(t, err)
 
 			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
@@ -94,5 +101,4 @@ func TestAddMessage(t *testing.T) {
 			}
 		})
 	})
-
 }
