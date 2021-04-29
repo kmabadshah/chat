@@ -30,8 +30,8 @@ func TestGetFriends(t *testing.T) {
 	}
 
 	t.Run("valid id", func(t *testing.T) {
-		t.Run("user2 is friend of user1", func(t *testing.T) {
-			url := testServer.URL + "/friends/" + strconv.Itoa(user1.ID)
+		sendGetFriendsReqAndCompareRes := func(id int, wantedResBody []map[string]int) {
+			url := testServer.URL + "/friends/" + strconv.Itoa(id)
 
 			res, err := http.Get(url)
 			chat.AssertTestErr(t, err)
@@ -45,39 +45,23 @@ func TestGetFriends(t *testing.T) {
 			err = json.Unmarshal(resBody, &decodedResBody)
 			chat.AssertTestErr(t, err)
 
-			want := []map[string]int{
+			if !reflect.DeepEqual(wantedResBody, decodedResBody) {
+				t.Errorf("wanted %#v, got %#v", wantedResBody, decodedResBody)
+			}
+		}
+
+		t.Run("user2 is friend of user1", func(t *testing.T) {
+			resBody := []map[string]int{
 				{"srcID": user1.ID, "tarID": user2.ID},
 			}
-			got := decodedResBody
-
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("wanted %#v, got %#v", want, got)
-			}
+			sendGetFriendsReqAndCompareRes(user1.ID, resBody)
 		})
 
 		t.Run("user1 is friend of user2", func(t *testing.T) {
-			url := testServer.URL + "/friends/" + strconv.Itoa(user2.ID)
-
-			res, err := http.Get(url)
-			chat.AssertTestErr(t, err)
-
-			resBody, err := ioutil.ReadAll(res.Body)
-			chat.AssertTestErr(t, err)
-
-			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
-
-			var decodedResBody []map[string]int
-			err = json.Unmarshal(resBody, &decodedResBody)
-			chat.AssertTestErr(t, err)
-
-			want := []map[string]int{
+			resBody := []map[string]int{
 				{"srcID": user1.ID, "tarID": user2.ID},
 			}
-			got := decodedResBody
-
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("wanted %#v, got %#v", want, got)
-			}
+			sendGetFriendsReqAndCompareRes(user2.ID, resBody)
 		})
 	})
 }
