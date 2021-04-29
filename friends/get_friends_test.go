@@ -41,11 +41,13 @@ func TestGetFriends(t *testing.T) {
 
 			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 
-			var decodedResBody []map[string]interface{}
+			var decodedResBody []map[string]int
 			err = json.Unmarshal(resBody, &decodedResBody)
 			chat.AssertTestErr(t, err)
 
-			want := []users.User{user2}
+			want := []map[string]int{
+				{"srcID": user1.ID, "tarID": user2.ID},
+			}
 			got := decodedResBody
 
 			if !reflect.DeepEqual(got, want) {
@@ -64,11 +66,13 @@ func TestGetFriends(t *testing.T) {
 
 			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 
-			var decodedResBody []map[string]interface{}
+			var decodedResBody []map[string]int
 			err = json.Unmarshal(resBody, &decodedResBody)
 			chat.AssertTestErr(t, err)
 
-			want := []users.User{user1}
+			want := []map[string]int{
+				{"srcID": user1.ID, "tarID": user2.ID},
+			}
 			got := decodedResBody
 
 			if !reflect.DeepEqual(got, want) {

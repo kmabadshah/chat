@@ -24,6 +24,7 @@ func init() {
 func NewRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.Path("/friends").Methods("POST").HandlerFunc(AddFriend)
+	router.Path("/friends/{id}").Methods("GET").HandlerFunc(GetFriends)
 
 	return router
 }
