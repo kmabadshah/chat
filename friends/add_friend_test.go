@@ -56,7 +56,7 @@ func TestAddFriend(t *testing.T) {
 		chat.AssertTestErr(t, err)
 
 		got := string(resBody)
-		want := "invalid syntax"
+		want := errReqBody
 
 		if got != want {
 			t.Errorf("invalid resp body, wanted %#v, got %#v", want, got)
