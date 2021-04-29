@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/kmabadshah/chat"
 	"github.com/kmabadshah/chat/users"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,10 +18,12 @@ func TestAddFriend(t *testing.T) {
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
-	t.Run("valid id and req body", func(t *testing.T) {
-		user1 := users.CreateTestUser(t)
-		user2 := users.CreateTestUser(t)
-		url := testServer.URL + "/friends"
+	user1 := users.CreateTestUser(t)
+	user2 := users.CreateTestUser(t)
+
+	url := testServer.URL + "/friends"
+
+	t.Run("valid req body", func(t *testing.T) {
 		reqBody := map[string]int{
 			"srcID": user1.ID,
 			"tarID": user2.ID,
@@ -35,7 +38,28 @@ func TestAddFriend(t *testing.T) {
 		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 	})
 
-	t.Run("invalid id, valid body", func(t *testing.T) {
+	t.Run("invalid body syntax", func(t *testing.T) {
+		reqBody := map[int]int{
+			10: 20,
+			30: 40,
+		}
 
+		encodedReqBody, err := json.Marshal(reqBody)
+		chat.AssertTestErr(t, err)
+
+		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
+		chat.AssertTestErr(t, err)
+
+		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
+
+		resBody, err := ioutil.ReadAll(res.Body)
+		chat.AssertTestErr(t, err)
+
+		got := string(resBody)
+		want := "invalid syntax"
+
+		if got != want {
+			t.Errorf("invalid resp body, wanted %#v, got %#v", want, got)
+		}
 	})
 }
