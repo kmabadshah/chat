@@ -26,6 +26,11 @@ func ClearAllTables() {
 	if err != nil {
 		panic(err)
 	}
+
+	_, err = DB.Exec(`delete from messages`)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func RandSeq(n int) string {

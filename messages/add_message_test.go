@@ -40,7 +40,7 @@ func TestAddMessage(t *testing.T) {
 		resBody, err := ioutil.ReadAll(res.Body)
 		chat.AssertTestErr(t, err)
 
-		want := "message added successfully"
+		want := resAddSuccess
 		got := string(resBody)
 
 		if got != want {

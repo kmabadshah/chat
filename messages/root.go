@@ -7,9 +7,10 @@ import (
 	"log"
 )
 
-type Friend struct {
-	SrcID int `json:"srcID"`
-	TarID int `json:"tarID"`
+type Message struct {
+	SrcID int    `json:"srcID"`
+	TarID int    `json:"tarID"`
+	Text  string `json:"text"`
 }
 
 func init() {
@@ -23,6 +24,7 @@ func init() {
 
 func NewRouter() *mux.Router {
 	router := mux.NewRouter()
+	router.Path("/messages").Methods("POST").HandlerFunc(AddMessage)
 
 	return router
 }
