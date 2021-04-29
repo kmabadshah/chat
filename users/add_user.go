@@ -11,7 +11,7 @@ import (
 func AddUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
 
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 
@@ -34,12 +34,12 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(user)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 }

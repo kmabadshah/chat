@@ -11,13 +11,13 @@ const errReqBody = "invalid body, must include a valid srcID and tarID field"
 
 func AddFriend(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 
 	var decodedReqBody map[string]int
 	err = json.Unmarshal(reqBody, &decodedReqBody)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 

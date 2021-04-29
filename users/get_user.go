@@ -18,12 +18,12 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(user)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 }

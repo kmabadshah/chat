@@ -9,15 +9,15 @@ import (
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	err := chat.DB.Model(&users).Select()
-	chat.AssertRandomError(err, &w)
+	chat.AssertInternalError(err, &w)
 
 	encodedResBody, err := json.Marshal(users)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 }

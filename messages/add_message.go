@@ -7,13 +7,34 @@ import (
 	"net/http"
 )
 
-const resAddSuccess = "message added successfully"
+const (
+	resAddSuccess = "message added successfully"
+	errReqBody    = "invalid req body, must include valid srcID, tarID and text field"
+)
 
 func AddMessage(w http.ResponseWriter, r *http.Request) {
-	reqBody, _ := ioutil.ReadAll(r.Body)
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if chat.AssertInternalError(err, &w) {
+		return
+	}
 
 	var decodedReqBody map[string]interface{}
-	_ = json.Unmarshal(reqBody, &decodedReqBody)
+	err = json.Unmarshal(reqBody, &decodedReqBody)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(errReqBody))
+		return
+	}
+
+	if len(decodedReqBody) != 3 ||
+		decodedReqBody["srcID"] == nil ||
+		decodedReqBody["tarID"] == nil ||
+		decodedReqBody["text"] == nil {
+
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(errReqBody))
+		return
+	}
 
 	message := Message{
 		SrcID: int(decodedReqBody["srcID"].(float64)),

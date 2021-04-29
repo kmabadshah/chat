@@ -24,7 +24,7 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(friends)
-	if chat.AssertRandomError(err, &w) {
+	if chat.AssertInternalError(err, &w) {
 		return
 	}
 

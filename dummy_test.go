@@ -2,28 +2,25 @@ package chat
 
 import (
 	"encoding/json"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/kmabadshah/chat/users"
+	"github.com/kmabadshah/chat/messages"
 	"testing"
 )
 
+type y struct {
+	names string
+}
+
 func TestDummy(t *testing.T) {
 	x := map[string]interface{}{
-		"uname":     "adnan",
-		"pass":      "hello",
-		"id":        "helo",
-		"something": "else",
+		"srcID": 10,
+		"tarID": 20,
+		"text":  "hello world",
 	}
 	encodedX, err := json.Marshal(x)
 	AssertTestErr(t, err)
 
-	var user users.User
-	err = json.Unmarshal(encodedX, &user)
+	var decodedX messages.Message
+	err = json.Unmarshal(encodedX, &decodedX)
 	AssertTestErr(t, err)
 
-	//var y users.User
-	//err = mapstructure.Decode(user, &y)
-	//AssertTestErr(t, err)
-
-	spew.Dump(user)
 }

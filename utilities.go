@@ -5,6 +5,10 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -59,13 +63,15 @@ func AssertTestStatusCode(t *testing.T, got int, want int) {
 	}
 }
 
-func AssertRandomError(err error, w *http.ResponseWriter) bool {
-	return AssertError(err, w, http.StatusInternalServerError)
-}
-func AssertError(err error, w *http.ResponseWriter, statusCode int) bool {
+func AssertInternalError(err error, w *http.ResponseWriter) bool {
 	if err != nil {
-		(*w).WriteHeader(statusCode)
-		log.Println(err)
+		(*w).WriteHeader(http.StatusInternalServerError)
+
+		_, fullPath, linum, _ := runtime.Caller(1)
+		fileName := filepath.Base(fullPath)
+		customLogger := log.New(os.Stderr, fileName+":"+strconv.Itoa(linum)+" ", 0)
+		customLogger.Println(err)
+
 		return true
 	}
 
