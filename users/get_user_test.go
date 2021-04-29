@@ -13,7 +13,7 @@ import (
 func TestGetUser(t *testing.T) {
 	chat.ClearAllTables()
 
-	user := createTestUser(t)
+	user := CreateTestUser(t)
 
 	router := NewRouter()
 	testServer := httptest.NewServer(router)

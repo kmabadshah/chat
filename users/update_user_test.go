@@ -18,7 +18,7 @@ func TestUpdateUser(t *testing.T) {
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
-	user := createTestUser(t)
+	user := CreateTestUser(t)
 
 	sendUpdateReq := func(t *testing.T, reqBody interface{}) *http.Response {
 		encodedReqBody, err := json.Marshal(reqBody)
@@ -76,7 +76,7 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("change username to something that is in use", func(t *testing.T) {
-		user2 := createTestUser(t)
+		user2 := CreateTestUser(t)
 
 		reqBody := map[string]interface{}{
 			"uname": user2.Uname,

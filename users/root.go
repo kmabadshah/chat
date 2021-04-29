@@ -33,7 +33,7 @@ func NewRouter() *mux.Router {
 	return router
 }
 
-func createTestUser(t *testing.T) User {
+func CreateTestUser(t *testing.T) User {
 	user := User{
 		Uname: chat.RandSeq(5),
 		Pass:  chat.RandSeq(5),

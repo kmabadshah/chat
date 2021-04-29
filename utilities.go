@@ -28,16 +28,6 @@ func ClearAllTables() {
 	}
 }
 
-func AssertError(err error, w *http.ResponseWriter, statusCode int) bool {
-	if err != nil {
-		(*w).WriteHeader(statusCode)
-		log.Println(err)
-		return true
-	}
-
-	return false
-}
-
 func RandSeq(n int) string {
 	rand.Seed(time.Now().UnixNano())
 	var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -66,4 +56,13 @@ func AssertTestStatusCode(t *testing.T, got int, want int) {
 
 func AssertRandomError(err error, w *http.ResponseWriter) bool {
 	return AssertError(err, w, http.StatusInternalServerError)
+}
+func AssertError(err error, w *http.ResponseWriter, statusCode int) bool {
+	if err != nil {
+		(*w).WriteHeader(statusCode)
+		log.Println(err)
+		return true
+	}
+
+	return false
 }
