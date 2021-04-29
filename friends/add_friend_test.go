@@ -62,4 +62,29 @@ func TestAddFriend(t *testing.T) {
 			t.Errorf("invalid resp body, wanted %#v, got %#v", want, got)
 		}
 	})
+
+	t.Run("invalid srcID field", func(t *testing.T) {
+		reqBody := map[string]int{
+			"srcID": -1,
+			"tarID": -2,
+		}
+
+		encodedReqBody, err := json.Marshal(reqBody)
+		chat.AssertTestErr(t, err)
+
+		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
+		chat.AssertTestErr(t, err)
+
+		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
+
+		resBody, err := ioutil.ReadAll(res.Body)
+		chat.AssertTestErr(t, err)
+
+		got := string(resBody)
+		want := errReqBody
+
+		if got != want {
+			t.Errorf("invalid resp body, wanted %#v, got %#v", want, got)
+		}
+	})
 }
