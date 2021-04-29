@@ -13,9 +13,13 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 
 	var friends []Friend
 	err := chat.DB.Model(&friends).Where("src_id=?", id).WhereOr("tar_id=?", id).Select()
-	if err != nil || len(friends) == 0 {
+	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if len(friends) == 0 {
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 

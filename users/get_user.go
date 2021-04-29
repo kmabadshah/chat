@@ -5,18 +5,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kmabadshah/chat"
 	"net/http"
-	"strconv"
 )
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	idRaw := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(idRaw)
-	if chat.AssertError(err, &w, http.StatusNotFound) {
-		return
-	}
+	uname := mux.Vars(r)["uname"]
 
 	var user User
-	err = chat.DB.Model(&user).Where("id=?", id).Select()
+	err := chat.DB.Model(&user).Where("uname=?", uname).Select()
 	if err != nil || user.ID == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		return

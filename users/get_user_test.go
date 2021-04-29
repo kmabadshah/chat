@@ -3,9 +3,11 @@ package users
 import (
 	"encoding/json"
 	"github.com/kmabadshah/chat"
+	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"testing"
 )
@@ -19,8 +21,8 @@ func TestGetUser(t *testing.T) {
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
-	t.Run("valid id", func(t *testing.T) {
-		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
+	t.Run("valid name", func(t *testing.T) {
+		url := testServer.URL + "/users/" + user.Uname
 		res, err := http.Get(url)
 		chat.AssertTestErr(t, err)
 
@@ -36,20 +38,30 @@ func TestGetUser(t *testing.T) {
 			err = json.Unmarshal(resBody, &decodedResBody)
 			chat.AssertTestErr(t, err)
 
-			if decodedResBody["uname"] != user.Uname ||
-				decodedResBody["pass"] != user.Pass {
+			if reflect.TypeOf(decodedResBody["id"]).String() == "float64" {
+				decodedResBody["id"] = int(decodedResBody["id"].(float64))
+			}
 
-				t.Errorf("did not get two users, got %#v", decodedResBody)
+			if decodedResBody["id"] != nil {
+				decodedResBody["id"] = decodedResBody["id"].(int)
+			}
+
+			var want map[string]interface{}
+			err = mapstructure.Decode(user, &want)
+			chat.AssertTestErr(t, err)
+
+			if !reflect.DeepEqual(want, decodedResBody) {
+				t.Errorf("wanted %#v, got %#v", want, decodedResBody)
 			}
 		})
 	})
 
-	t.Run("invalid id", func(t *testing.T) {
+	t.Run("invalid name", func(t *testing.T) {
 		url := testServer.URL + "/users/" + strconv.Itoa(-1)
 		res, err := http.Get(url)
 		chat.AssertTestErr(t, err)
 
-		t.Run("check code", func(t *testing.T) {
+		t.Run("check status code", func(t *testing.T) {
 			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusNotFound)
 		})
 	})

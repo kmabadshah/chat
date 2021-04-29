@@ -69,6 +69,6 @@ func TestGetFriends(t *testing.T) {
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		sendReqAndCompareRes(t, -1, http.StatusBadRequest, nil)
+		sendReqAndCompareRes(t, -1, http.StatusNotFound, nil)
 	})
 }
