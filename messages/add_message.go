@@ -23,6 +23,7 @@ func AddMessage(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(reqBody, &decodedReqBody)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(errReqBody))
 		return
 	}
 
@@ -41,7 +42,15 @@ func AddMessage(w http.ResponseWriter, r *http.Request) {
 		TarID: int(decodedReqBody["tarID"].(float64)),
 		Text:  decodedReqBody["text"].(string),
 	}
-	_, _ = chat.DB.Model(&message).Insert()
-
+	res, err := chat.DB.Model(&message).Insert()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if res.RowsAffected() != 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(errReqBody))
+		return
+	}
 	_, _ = w.Write([]byte(resAddSuccess))
 }
