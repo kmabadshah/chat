@@ -14,7 +14,8 @@ const (
 
 func AddMessage(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
-	if chat.AssertInternalError(err, &w) {
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -22,7 +23,6 @@ func AddMessage(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(reqBody, &decodedReqBody)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(errReqBody))
 		return
 	}
 

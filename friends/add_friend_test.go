@@ -23,7 +23,7 @@ func TestAddFriend(t *testing.T) {
 
 	url := testServer.URL + "/friends"
 
-	sendAddFriendReq := func(t *testing.T, reqBody interface{}, wantStatus int, wantBody string) { // <-- refactor
+	sendAddFriendReq := func(t *testing.T, reqBody interface{}, wantStatus int, wantBody string) {
 		encodedReqBody, err := json.Marshal(reqBody)
 		chat.AssertTestErr(t, err)
 
