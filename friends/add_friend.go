@@ -26,7 +26,7 @@ func AddFriend(w http.ResponseWriter, r *http.Request) {
 		decodedReqBody["tarID"] == 0 {
 
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errReqBody))
+		_, _ = w.Write([]byte(errReqBody))
 
 		return
 	}
@@ -38,7 +38,7 @@ func AddFriend(w http.ResponseWriter, r *http.Request) {
 	res, err := chat.DB.Model(&friend).Insert()
 	if err != nil || res.RowsAffected() != 1 {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errReqBody))
+		_, _ = w.Write([]byte(errReqBody))
 		return
 	}
 }

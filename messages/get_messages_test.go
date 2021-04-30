@@ -22,7 +22,7 @@ func TestGetMessages(t *testing.T) {
 	user1 := users.CreateTestUser(t)
 	user2 := users.CreateTestUser(t)
 
-	// add messsage
+	// add message
 	message := Message{
 		SrcID: user1.ID,
 		TarID: user2.ID,
@@ -59,5 +59,13 @@ func TestGetMessages(t *testing.T) {
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("want %#v, got %#v", want, got)
 		}
+	})
+
+	t.Run("invalid id", func(t *testing.T) {
+		url := testServer.URL + "/messages/" + strconv.Itoa(-1)
+		res, err := http.Get(url)
+		chat.AssertTestErr(t, err)
+
+		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusNotFound)
 	})
 }
