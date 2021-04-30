@@ -22,7 +22,7 @@ func init() {
 
 type Client struct {
 	conn *websocket.Conn
-	id   int
+	uid  int
 }
 
 func NewRouter() *mux.Router {
@@ -48,19 +48,33 @@ func NewRouter() *mux.Router {
 			_, encodedData, _ := conn.ReadMessage()
 			_ = json.Unmarshal(encodedData, &decodedData)
 
-			tarIDRaw := decodedData["tarID"].(float64)
-			tarID := int(tarIDRaw)
+			switch decodedData["type"].(string) {
+			case "message":
+				tarIDRaw := decodedData["uid"].(float64)
+				tarID := int(tarIDRaw)
 
-			encodedData, _ = json.Marshal(map[string]interface{}{
-				"type":  "message",
-				"srcID": uid,
-			})
+				encodedData, _ = json.Marshal(map[string]interface{}{
+					"type": "message",
+					"uid":  uid,
+				})
 
-			for _, cl := range clients {
-				if cl.id == tarID {
+				for _, cl := range clients {
+					if cl.uid == tarID {
+						_ = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
+					}
+				}
+
+			case "broadcast":
+				encodedData, _ = json.Marshal(map[string]interface{}{
+					"type": "user",
+					"uid":  uid,
+				})
+
+				for _, cl := range clients {
 					_ = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
 				}
 			}
+
 		}
 	})
 

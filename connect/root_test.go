@@ -32,10 +32,16 @@ func TestConnectUser(t *testing.T) {
 	chat.AssertTestErr(t, err)
 	chat.AssertTestStatusCode(t, res2.StatusCode, http.StatusSwitchingProtocols)
 
+	user3 := users.CreateTestUser(t)
+	url3 := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/" + strconv.Itoa(user3.ID)
+	conn3, res3, err := websocket.DefaultDialer.Dial(url3, nil)
+	chat.AssertTestErr(t, err)
+	chat.AssertTestStatusCode(t, res3.StatusCode, http.StatusSwitchingProtocols)
+
 	t.Run("user2 gets notified when user1 sends new message", func(t *testing.T) {
 		reqBody := map[string]interface{}{
-			"type":  "message",
-			"tarID": user2.ID,
+			"type": "message",
+			"uid":  user2.ID,
 		}
 		encodedReqBody, err := json.Marshal(reqBody)
 		chat.AssertTestErr(t, err)
@@ -49,12 +55,45 @@ func TestConnectUser(t *testing.T) {
 		chat.AssertTestErr(t, err)
 
 		want := map[string]interface{}{
-			"type":  "message",
-			"srcID": float64(user1.ID),
+			"type": "message",
+			"uid":  float64(user1.ID),
 		}
 
 		if !reflect.DeepEqual(want, decodedData) {
 			t.Errorf("got %#v, wanted %#v", decodedData, want)
+		}
+	})
+
+	t.Run("user2 and user1 notified when user3 changes uname", func(t *testing.T) {
+		reqBody := map[string]interface{}{
+			"type": "broadcast",
+		}
+		encodedReqBody, err := json.Marshal(reqBody)
+		chat.AssertTestErr(t, err)
+
+		err = conn3.WriteMessage(websocket.TextMessage, encodedReqBody)
+		chat.AssertTestErr(t, err)
+
+		var decodedData1 map[string]interface{}
+		_, encodedData1, err := conn1.ReadMessage()
+		err = json.Unmarshal(encodedData1, &decodedData1)
+		chat.AssertTestErr(t, err)
+
+		var decodedData2 map[string]interface{}
+		_, encodedData2, err := conn2.ReadMessage()
+		err = json.Unmarshal(encodedData2, &decodedData2)
+		chat.AssertTestErr(t, err)
+
+		want := map[string]interface{}{
+			"type": "user",
+			"uid":  float64(user3.ID),
+		}
+
+		if !reflect.DeepEqual(want, decodedData1) {
+			t.Errorf("got %#v, wanted %#v", decodedData1, want)
+		}
+		if !reflect.DeepEqual(want, decodedData2) {
+			t.Errorf("got %#v, wanted %#v", decodedData2, want)
 		}
 	})
 }
