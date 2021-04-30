@@ -20,39 +20,18 @@ func TestConnectUser(t *testing.T) {
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
-	user1 := users.CreateTestUser(t)
-	url1 := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/" + strconv.Itoa(user1.ID)
-	conn1, res1, err := websocket.DefaultDialer.Dial(url1, nil)
-	chat.AssertTestErr(t, err)
-	chat.AssertTestStatusCode(t, res1.StatusCode, http.StatusSwitchingProtocols)
-
-	user2 := users.CreateTestUser(t)
-	url2 := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/" + strconv.Itoa(user2.ID)
-	conn2, res2, err := websocket.DefaultDialer.Dial(url2, nil)
-	chat.AssertTestErr(t, err)
-	chat.AssertTestStatusCode(t, res2.StatusCode, http.StatusSwitchingProtocols)
-
-	user3 := users.CreateTestUser(t)
-	url3 := "ws" + strings.TrimPrefix(testServer.URL, "http") + "/connect/" + strconv.Itoa(user3.ID)
-	conn3, res3, err := websocket.DefaultDialer.Dial(url3, nil)
-	chat.AssertTestErr(t, err)
-	chat.AssertTestStatusCode(t, res3.StatusCode, http.StatusSwitchingProtocols)
+	user1, conn1 := createAndConnect(t, testServer.URL)
+	user2, conn2 := createAndConnect(t, testServer.URL)
+	user3, conn3 := createAndConnect(t, testServer.URL)
 
 	t.Run("user2 gets notified when user1 sends new message", func(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"type": "message",
 			"uid":  user2.ID,
 		}
-		encodedReqBody, err := json.Marshal(reqBody)
-		chat.AssertTestErr(t, err)
+		sendMsg(t, reqBody, conn1)
 
-		err = conn1.WriteMessage(websocket.TextMessage, encodedReqBody)
-		chat.AssertTestErr(t, err)
-
-		var decodedData map[string]interface{}
-		_, encodedData, err := conn2.ReadMessage()
-		err = json.Unmarshal(encodedData, &decodedData)
-		chat.AssertTestErr(t, err)
+		decodedData := recvMsg(t, conn2)
 
 		want := map[string]interface{}{
 			"type": "message",
@@ -68,21 +47,10 @@ func TestConnectUser(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"type": "broadcast",
 		}
-		encodedReqBody, err := json.Marshal(reqBody)
-		chat.AssertTestErr(t, err)
+		sendMsg(t, reqBody, conn3)
 
-		err = conn3.WriteMessage(websocket.TextMessage, encodedReqBody)
-		chat.AssertTestErr(t, err)
-
-		var decodedData1 map[string]interface{}
-		_, encodedData1, err := conn1.ReadMessage()
-		err = json.Unmarshal(encodedData1, &decodedData1)
-		chat.AssertTestErr(t, err)
-
-		var decodedData2 map[string]interface{}
-		_, encodedData2, err := conn2.ReadMessage()
-		err = json.Unmarshal(encodedData2, &decodedData2)
-		chat.AssertTestErr(t, err)
+		decodedData1 := recvMsg(t, conn1)
+		decodedData2 := recvMsg(t, conn2)
 
 		want := map[string]interface{}{
 			"type": "user",
@@ -96,4 +64,37 @@ func TestConnectUser(t *testing.T) {
 			t.Errorf("got %#v, wanted %#v", decodedData2, want)
 		}
 	})
+}
+
+func createAndConnect(t *testing.T, url string) (users.User, *websocket.Conn) {
+	t.Helper()
+
+	user := users.CreateTestUser(t)
+	url1 := "ws" + strings.TrimPrefix(url, "http") + "/connect/" + strconv.Itoa(user.ID)
+	conn, res, err := websocket.DefaultDialer.Dial(url1, nil)
+	chat.AssertTestErr(t, err)
+	chat.AssertTestStatusCode(t, res.StatusCode, http.StatusSwitchingProtocols)
+
+	return user, conn
+}
+
+func sendMsg(t *testing.T, reqBody map[string]interface{}, conn *websocket.Conn) {
+	t.Helper()
+
+	encodedReqBody, err := json.Marshal(reqBody)
+	chat.AssertTestErr(t, err)
+
+	err = conn.WriteMessage(websocket.TextMessage, encodedReqBody)
+	chat.AssertTestErr(t, err)
+}
+
+func recvMsg(t *testing.T, conn *websocket.Conn) map[string]interface{} {
+	t.Helper()
+
+	_, encodedData, err := conn.ReadMessage()
+	var decodedData map[string]interface{}
+	err = json.Unmarshal(encodedData, &decodedData)
+	chat.AssertTestErr(t, err)
+
+	return decodedData
 }
