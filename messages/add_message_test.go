@@ -23,68 +23,76 @@ func TestAddMessage(t *testing.T) {
 
 	url := testServer.URL + "/messages"
 
-	tests := []struct {
-		name       string
-		reqBody    interface{}
-		wantStatus int
-		wantRes    string
-	}{
-		{
-			"valid req body",
-			map[string]interface{}{
-				"srcID": user1.ID,
-				"tarID": user2.ID,
-				"text":  "hello user2",
-			},
-			http.StatusOK,
-			resAddSuccess,
-		},
+	t.Run("valid req body", func(t *testing.T) {
+		reqBody := map[string]interface{}{
+			"srcID": user1.ID,
+			"tarID": user2.ID,
+			"text":  "hello user2",
+		}
+		encodedReqBody, err := json.Marshal(reqBody)
+		chat.AssertTestErr(t, err)
 
-		{
-			"invalid reqBody syntax",
-			map[string]interface{}{
+		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
+		chat.AssertTestErr(t, err)
+
+		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+
+		resBody, err := ioutil.ReadAll(res.Body)
+		chat.AssertTestErr(t, err)
+
+		want := resAddSuccess
+		got := string(resBody)
+
+		if got != want {
+			t.Errorf("invalid resBody, wanted %#v, got %#v", want, got)
+		}
+	})
+
+	t.Run("invalid req body", func(t *testing.T) {
+		t.Run("with valid json binary", func(t *testing.T) {
+			reqBody := map[string]interface{}{
 				"srcID": user1.ID,
 				"tarID": user2.ID,
 				"text":  "hello user2",
 				"10":    20,
 				"30":    40,
-			},
-			http.StatusBadRequest,
-			errReqBody,
-		},
-
-		{
-			"valid syntax but invalid data",
-			map[string]interface{}{
-				"srcID": -1,
-				"tarID": -2,
-				"text":  "hello world",
-			},
-			http.StatusBadRequest,
-			errReqBody,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Helper()
-			encodedReqBody, err := json.Marshal(test.reqBody)
+			}
+			encodedReqBody, err := json.Marshal(reqBody)
 			chat.AssertTestErr(t, err)
 
 			res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
 			chat.AssertTestErr(t, err)
 
-			chat.AssertTestStatusCode(t, res.StatusCode, test.wantStatus)
+			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
 
 			resBody, err := ioutil.ReadAll(res.Body)
 			chat.AssertTestErr(t, err)
 
-			want := test.wantRes
+			want := errReqBody
 			got := string(resBody)
 
 			if got != want {
 				t.Errorf("invalid resBody, wanted %#v, got %#v", want, got)
 			}
 		})
-	}
+
+		t.Run("with non json binary", func(t *testing.T) {
+			reqBody := []byte("hello world")
+			res, err := http.Post(url, "application/json", bytes.NewReader(reqBody))
+			chat.AssertTestErr(t, err)
+
+			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
+
+			resBody, err := ioutil.ReadAll(res.Body)
+			chat.AssertTestErr(t, err)
+
+			want := errReqBody
+			got := string(resBody)
+
+			if got != want {
+				t.Errorf("invalid resBody, wanted %#v, got %#v", want, got)
+			}
+		})
+	})
+
 }
