@@ -8,9 +8,9 @@ import (
 )
 
 type Message struct {
-	SrcID int    `json:"srcID"`
-	TarID int    `json:"tarID"`
-	Text  string `json:"text"`
+	SrcID int    `json:"srcID" mapstructure:"srcID"`
+	TarID int    `json:"tarID" mapstructure:"tarID"`
+	Text  string `json:"text" mapstructure:"text"`
 }
 
 func init() {

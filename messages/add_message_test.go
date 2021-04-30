@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"github.com/kmabadshah/chat"
 	"github.com/kmabadshah/chat/users"
+	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
@@ -23,7 +25,7 @@ func TestAddMessage(t *testing.T) {
 
 	url := testServer.URL + "/messages"
 
-	x := func(t *testing.T, reqBody map[string]interface{}, wantStatus int, wantBody string) {
+	sendReqAndCompareRes := func(t *testing.T, reqBody map[string]interface{}, wantStatus int, wantBody string) {
 		encodedReqBody, err := json.Marshal(reqBody)
 		chat.AssertTestErr(t, err)
 
@@ -49,7 +51,23 @@ func TestAddMessage(t *testing.T) {
 			"tarID": user2.ID,
 			"text":  "hello user2",
 		}
-		x(t, reqBody, http.StatusOK, resAddSuccess)
+		sendReqAndCompareRes(t, reqBody, http.StatusOK, resAddSuccess)
+
+		t.Run("check if message added to db", func(t *testing.T) {
+			var messages []Message
+			err := chat.DB.Model(&messages).Select()
+			chat.AssertTestErr(t, err)
+
+			var got map[string]interface{}
+			err = mapstructure.Decode(messages[0], &got)
+			chat.AssertTestErr(t, err)
+
+			want := reqBody
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("message not added to db, wanted %#v, got %#v", want, got)
+			}
+		})
 	})
 
 	t.Run("with invalid syntax", func(t *testing.T) {
@@ -60,7 +78,7 @@ func TestAddMessage(t *testing.T) {
 			"10":    20,
 			"30":    40,
 		}
-		x(t, reqBody, http.StatusBadRequest, errReqBody)
+		sendReqAndCompareRes(t, reqBody, http.StatusBadRequest, errReqBody)
 	})
 
 	t.Run("with valid syntax but invalid data", func(t *testing.T) {
@@ -71,6 +89,6 @@ func TestAddMessage(t *testing.T) {
 			"10":    20,
 			"30":    40,
 		}
-		x(t, reqBody, http.StatusBadRequest, errReqBody)
+		sendReqAndCompareRes(t, reqBody, http.StatusBadRequest, errReqBody)
 	})
 }
