@@ -25,6 +25,7 @@ func init() {
 func NewRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.Path("/messages").Methods("POST").HandlerFunc(AddMessage)
+	router.Path("/messages/{uid}").Methods("GET").HandlerFunc(GetMessages)
 
 	return router
 }
