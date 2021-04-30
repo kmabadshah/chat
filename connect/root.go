@@ -39,14 +39,31 @@ func NewRouter() *mux.Router {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		chat.AssertInternalError(err, &w)
 
+		for _, cl := range clients {
+			encodedData, err := json.Marshal(map[string]interface{}{
+				"type": "connect",
+				"id":   uid,
+			})
+			err = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
 		clients = append(clients, Client{
 			conn, uid,
 		})
 
 		for {
 			var decodedData map[string]interface{}
-			_, encodedData, _ := conn.ReadMessage()
-			_ = json.Unmarshal(encodedData, &decodedData)
+			_, encodedData, err := conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+			}
+			err = json.Unmarshal(encodedData, &decodedData)
+			if err != nil {
+				log.Println(err)
+			}
 
 			switch decodedData["type"].(string) {
 			case "message":
@@ -71,7 +88,10 @@ func NewRouter() *mux.Router {
 				})
 
 				for _, cl := range clients {
-					_ = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
+					err = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
+					if err != nil {
+						log.Println(err)
+					}
 				}
 			}
 

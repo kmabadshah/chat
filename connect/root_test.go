@@ -21,8 +21,72 @@ func TestConnectUser(t *testing.T) {
 	defer testServer.Close()
 
 	user1, conn1 := createAndConnect(t, testServer.URL)
-	user2, conn2 := createAndConnect(t, testServer.URL)
-	user3, conn3 := createAndConnect(t, testServer.URL)
+
+	var user2 users.User
+	var conn2 *websocket.Conn
+
+	var user3 users.User
+	var conn3 *websocket.Conn
+
+	t.Run("when user2 joins, user1 gets notified", func(t *testing.T) {
+		user2, conn2 = createAndConnect(t, testServer.URL)
+
+		_, encData, err := conn1.ReadMessage()
+		chat.AssertTestErr(t, err)
+
+		var decData map[string]interface{}
+		err = json.Unmarshal(encData, &decData)
+		chat.AssertTestErr(t, err)
+
+		want := map[string]interface{}{
+			"type": "connect",
+			"id":   float64(user2.ID),
+		}
+
+		if !reflect.DeepEqual(decData, want) {
+			t.Errorf("got %#v, wanted %#v", decData, want)
+		}
+	})
+
+	t.Run("when user3 joins", func(t *testing.T) {
+		user3, conn3 = createAndConnect(t, testServer.URL)
+
+		t.Run("user1 gets notified", func(t *testing.T) {
+			_, encData, err := conn1.ReadMessage()
+			chat.AssertTestErr(t, err)
+
+			var decData map[string]interface{}
+			err = json.Unmarshal(encData, &decData)
+			chat.AssertTestErr(t, err)
+
+			want := map[string]interface{}{
+				"type": "connect",
+				"id":   float64(user3.ID),
+			}
+
+			if !reflect.DeepEqual(decData, want) {
+				t.Errorf("got %#v, wanted %#v", decData, want)
+			}
+		})
+
+		t.Run("user2 gets notified", func(t *testing.T) {
+			_, encData, err := conn2.ReadMessage()
+			chat.AssertTestErr(t, err)
+
+			var decData map[string]interface{}
+			err = json.Unmarshal(encData, &decData)
+			chat.AssertTestErr(t, err)
+
+			want := map[string]interface{}{
+				"type": "connect",
+				"id":   float64(user3.ID),
+			}
+
+			if !reflect.DeepEqual(decData, want) {
+				t.Errorf("got %#v, wanted %#v", decData, want)
+			}
+		})
+	})
 
 	t.Run("user2 gets notified when user1 sends new message", func(t *testing.T) {
 		reqBody := map[string]interface{}{
