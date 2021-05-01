@@ -1,6 +1,7 @@
 package connect
 
 import (
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/kmabadshah/chat"
 	"github.com/kmabadshah/chat/users"
@@ -29,7 +30,7 @@ func TestConnectUser(t *testing.T) {
 
 		want := map[string]interface{}{
 			"type": "connect",
-			"id":   float64(user2.ID),
+			"uid":  float64(user2.ID),
 		}
 
 		testReadMsgAndComp(t, conn1, want)
@@ -41,7 +42,7 @@ func TestConnectUser(t *testing.T) {
 		t.Run("user1 gets notified", func(t *testing.T) {
 			want := map[string]interface{}{
 				"type": "connect",
-				"id":   float64(user3.ID),
+				"uid":  float64(user3.ID),
 			}
 
 			testReadMsgAndComp(t, conn1, want)
@@ -50,7 +51,7 @@ func TestConnectUser(t *testing.T) {
 		t.Run("user2 gets notified", func(t *testing.T) {
 			want := map[string]interface{}{
 				"type": "connect",
-				"id":   float64(user3.ID),
+				"uid":  float64(user3.ID),
 			}
 
 			testReadMsgAndComp(t, conn2, want)
@@ -99,7 +100,20 @@ func TestConnectUser(t *testing.T) {
 	})
 
 	t.Run("user2 gets friend request from user1", func(t *testing.T) {
+		encMsg, err := json.Marshal(map[string]interface{}{
+			"type": "friend",
+			"uid":  float64(user2.ID),
+		})
+		chat.AssertTestErr(t, err)
 
+		err = conn1.WriteMessage(websocket.TextMessage, encMsg)
+		chat.AssertTestErr(t, err)
+
+		want := map[string]interface{}{
+			"type": "friend",
+			"uid":  float64(user1.ID),
+		}
+		testReadMsgAndComp(t, conn2, want)
 	})
 
 	t.Run("when user3 leaves", func(t *testing.T) {
@@ -109,7 +123,7 @@ func TestConnectUser(t *testing.T) {
 		t.Run("user2 gets notified", func(t *testing.T) {
 			want := map[string]interface{}{
 				"type": "leave",
-				"id":   float64(user3.ID),
+				"uid":  float64(user3.ID),
 			}
 
 			testReadMsgAndComp(t, conn2, want)
@@ -118,7 +132,7 @@ func TestConnectUser(t *testing.T) {
 		t.Run("user1 gets notified", func(t *testing.T) {
 			want := map[string]interface{}{
 				"type": "leave",
-				"id":   float64(user3.ID),
+				"uid":  float64(user3.ID),
 			}
 
 			testReadMsgAndComp(t, conn1, want)

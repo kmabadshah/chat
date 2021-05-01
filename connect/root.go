@@ -73,12 +73,7 @@ func testRecvMsg(t *testing.T, conn *websocket.Conn) map[string]interface{} {
 func testReadMsgAndComp(t *testing.T, conn *websocket.Conn, want map[string]interface{}) {
 	t.Helper()
 
-	_, encData, err := conn.ReadMessage()
-	chat.AssertTestErr(t, err)
-
-	var decData map[string]interface{}
-	err = json.Unmarshal(encData, &decData)
-	chat.AssertTestErr(t, err)
+	decData := testRecvMsg(t, conn)
 
 	if !reflect.DeepEqual(decData, want) {
 		t.Errorf("got %#v, wanted %#v", decData, want)

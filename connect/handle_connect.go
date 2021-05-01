@@ -26,7 +26,7 @@ func HandleConnect(w http.ResponseWriter, r *http.Request) {
 	for _, cl := range clients {
 		encodedData, err := json.Marshal(map[string]interface{}{
 			"type": "connect",
-			"id":   uid,
+			"uid":  uid,
 		})
 		err = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
 		if err != nil {
@@ -45,7 +45,7 @@ func HandleConnect(w http.ResponseWriter, r *http.Request) {
 			for _, cl := range clients {
 				encMsg, _ := json.Marshal(map[string]interface{}{
 					"type": "leave",
-					"id":   uid,
+					"uid":  uid,
 				})
 				err = cl.conn.WriteMessage(websocket.TextMessage, encMsg)
 				if err != nil {
@@ -88,7 +88,21 @@ func HandleConnect(w http.ResponseWriter, r *http.Request) {
 					log.Println(err)
 				}
 			}
-		}
 
+		case "friend":
+			tarIDRaw := decodedData["uid"].(float64)
+			tarID := int(tarIDRaw)
+
+			encodedData, _ = json.Marshal(map[string]interface{}{
+				"type": "friend",
+				"uid":  uid,
+			})
+
+			for _, cl := range clients {
+				if cl.uid == tarID {
+					_ = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
+				}
+			}
+		}
 	}
 }
