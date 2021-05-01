@@ -31,60 +31,33 @@ func TestConnectUser(t *testing.T) {
 	t.Run("when user2 joins, user1 gets notified", func(t *testing.T) {
 		user2, conn2 = createAndConnect(t, testServer.URL)
 
-		_, encData, err := conn1.ReadMessage()
-		chat.AssertTestErr(t, err)
-
-		var decData map[string]interface{}
-		err = json.Unmarshal(encData, &decData)
-		chat.AssertTestErr(t, err)
-
 		want := map[string]interface{}{
 			"type": "connect",
 			"id":   float64(user2.ID),
 		}
 
-		if !reflect.DeepEqual(decData, want) {
-			t.Errorf("got %#v, wanted %#v", decData, want)
-		}
+		connAndComp(t, conn1, want)
 	})
 
 	t.Run("when user3 joins", func(t *testing.T) {
 		user3, conn3 = createAndConnect(t, testServer.URL)
 
 		t.Run("user1 gets notified", func(t *testing.T) {
-			_, encData, err := conn1.ReadMessage()
-			chat.AssertTestErr(t, err)
-
-			var decData map[string]interface{}
-			err = json.Unmarshal(encData, &decData)
-			chat.AssertTestErr(t, err)
-
 			want := map[string]interface{}{
 				"type": "connect",
 				"id":   float64(user3.ID),
 			}
 
-			if !reflect.DeepEqual(decData, want) {
-				t.Errorf("got %#v, wanted %#v", decData, want)
-			}
+			connAndComp(t, conn1, want)
 		})
 
 		t.Run("user2 gets notified", func(t *testing.T) {
-			_, encData, err := conn2.ReadMessage()
-			chat.AssertTestErr(t, err)
-
-			var decData map[string]interface{}
-			err = json.Unmarshal(encData, &decData)
-			chat.AssertTestErr(t, err)
-
 			want := map[string]interface{}{
 				"type": "connect",
 				"id":   float64(user3.ID),
 			}
 
-			if !reflect.DeepEqual(decData, want) {
-				t.Errorf("got %#v, wanted %#v", decData, want)
-			}
+			connAndComp(t, conn2, want)
 		})
 	})
 
@@ -161,4 +134,19 @@ func recvMsg(t *testing.T, conn *websocket.Conn) map[string]interface{} {
 	chat.AssertTestErr(t, err)
 
 	return decodedData
+}
+
+func connAndComp(t *testing.T, conn *websocket.Conn, want map[string]interface{}) {
+	t.Helper()
+
+	_, encData, err := conn.ReadMessage()
+	chat.AssertTestErr(t, err)
+
+	var decData map[string]interface{}
+	err = json.Unmarshal(encData, &decData)
+	chat.AssertTestErr(t, err)
+
+	if !reflect.DeepEqual(decData, want) {
+		t.Errorf("got %#v, wanted %#v", decData, want)
+	}
 }
