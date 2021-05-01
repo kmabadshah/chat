@@ -1,15 +1,11 @@
 package connect
 
 import (
-	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/kmabadshah/chat"
 	"github.com/kmabadshah/chat/users"
-	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -20,7 +16,7 @@ func TestConnectUser(t *testing.T) {
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
-	user1, conn1 := createAndConnect(t, testServer.URL)
+	user1, conn1 := testCreateAndConnect(t, testServer.URL)
 
 	var user2 users.User
 	var conn2 *websocket.Conn
@@ -29,18 +25,18 @@ func TestConnectUser(t *testing.T) {
 	var conn3 *websocket.Conn
 
 	t.Run("when user2 joins, user1 gets notified", func(t *testing.T) {
-		user2, conn2 = createAndConnect(t, testServer.URL)
+		user2, conn2 = testCreateAndConnect(t, testServer.URL)
 
 		want := map[string]interface{}{
 			"type": "connect",
 			"id":   float64(user2.ID),
 		}
 
-		connAndComp(t, conn1, want)
+		testReadMsgAndComp(t, conn1, want)
 	})
 
 	t.Run("when user3 joins", func(t *testing.T) {
-		user3, conn3 = createAndConnect(t, testServer.URL)
+		user3, conn3 = testCreateAndConnect(t, testServer.URL)
 
 		t.Run("user1 gets notified", func(t *testing.T) {
 			want := map[string]interface{}{
@@ -48,7 +44,7 @@ func TestConnectUser(t *testing.T) {
 				"id":   float64(user3.ID),
 			}
 
-			connAndComp(t, conn1, want)
+			testReadMsgAndComp(t, conn1, want)
 		})
 
 		t.Run("user2 gets notified", func(t *testing.T) {
@@ -57,7 +53,7 @@ func TestConnectUser(t *testing.T) {
 				"id":   float64(user3.ID),
 			}
 
-			connAndComp(t, conn2, want)
+			testReadMsgAndComp(t, conn2, want)
 		})
 	})
 
@@ -66,9 +62,9 @@ func TestConnectUser(t *testing.T) {
 			"type": "message",
 			"uid":  user2.ID,
 		}
-		sendMsg(t, reqBody, conn1)
+		testSendMsg(t, reqBody, conn1)
 
-		decodedData := recvMsg(t, conn2)
+		decodedData := testRecvMsg(t, conn2)
 
 		want := map[string]interface{}{
 			"type": "message",
@@ -84,10 +80,10 @@ func TestConnectUser(t *testing.T) {
 		reqBody := map[string]interface{}{
 			"type": "broadcast",
 		}
-		sendMsg(t, reqBody, conn3)
+		testSendMsg(t, reqBody, conn3)
 
-		decodedData1 := recvMsg(t, conn1)
-		decodedData2 := recvMsg(t, conn2)
+		decodedData1 := testRecvMsg(t, conn1)
+		decodedData2 := testRecvMsg(t, conn2)
 
 		want := map[string]interface{}{
 			"type": "user",
@@ -101,52 +97,31 @@ func TestConnectUser(t *testing.T) {
 			t.Errorf("got %#v, wanted %#v", decodedData2, want)
 		}
 	})
-}
 
-func createAndConnect(t *testing.T, url string) (users.User, *websocket.Conn) {
-	t.Helper()
+	t.Run("user2 gets friend request from user1", func(t *testing.T) {
 
-	user := users.CreateTestUser(t)
-	url1 := "ws" + strings.TrimPrefix(url, "http") + "/connect/" + strconv.Itoa(user.ID)
-	conn, res, err := websocket.DefaultDialer.Dial(url1, nil)
-	chat.AssertTestErr(t, err)
-	chat.AssertTestStatusCode(t, res.StatusCode, http.StatusSwitchingProtocols)
+	})
 
-	return user, conn
-}
+	t.Run("when user3 leaves", func(t *testing.T) {
+		err := conn3.Close()
+		chat.AssertTestErr(t, err)
 
-func sendMsg(t *testing.T, reqBody map[string]interface{}, conn *websocket.Conn) {
-	t.Helper()
+		t.Run("user2 gets notified", func(t *testing.T) {
+			want := map[string]interface{}{
+				"type": "leave",
+				"id":   float64(user3.ID),
+			}
 
-	encodedReqBody, err := json.Marshal(reqBody)
-	chat.AssertTestErr(t, err)
+			testReadMsgAndComp(t, conn2, want)
+		})
 
-	err = conn.WriteMessage(websocket.TextMessage, encodedReqBody)
-	chat.AssertTestErr(t, err)
-}
+		t.Run("user1 gets notified", func(t *testing.T) {
+			want := map[string]interface{}{
+				"type": "leave",
+				"id":   float64(user3.ID),
+			}
 
-func recvMsg(t *testing.T, conn *websocket.Conn) map[string]interface{} {
-	t.Helper()
-
-	_, encodedData, err := conn.ReadMessage()
-	var decodedData map[string]interface{}
-	err = json.Unmarshal(encodedData, &decodedData)
-	chat.AssertTestErr(t, err)
-
-	return decodedData
-}
-
-func connAndComp(t *testing.T, conn *websocket.Conn, want map[string]interface{}) {
-	t.Helper()
-
-	_, encData, err := conn.ReadMessage()
-	chat.AssertTestErr(t, err)
-
-	var decData map[string]interface{}
-	err = json.Unmarshal(encData, &decData)
-	chat.AssertTestErr(t, err)
-
-	if !reflect.DeepEqual(decData, want) {
-		t.Errorf("got %#v, wanted %#v", decData, want)
-	}
+			testReadMsgAndComp(t, conn1, want)
+		})
+	})
 }

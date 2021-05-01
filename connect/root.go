@@ -6,9 +6,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/users"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
+	"strings"
+	"testing"
 )
 
 func init() {
@@ -28,75 +32,55 @@ type Client struct {
 func NewRouter() *mux.Router {
 	router := mux.NewRouter()
 
-	var clients []Client
-
-	router.Path("/connect/{uid}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		uidRaw := mux.Vars(r)["uid"]
-		uid, err := strconv.Atoi(uidRaw)
-		chat.AssertInternalError(err, &w)
-
-		upgrader := websocket.Upgrader{}
-		conn, err := upgrader.Upgrade(w, r, nil)
-		chat.AssertInternalError(err, &w)
-
-		for _, cl := range clients {
-			encodedData, err := json.Marshal(map[string]interface{}{
-				"type": "connect",
-				"id":   uid,
-			})
-			err = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-
-		clients = append(clients, Client{
-			conn, uid,
-		})
-
-		for {
-			var decodedData map[string]interface{}
-			_, encodedData, err := conn.ReadMessage()
-			if err != nil {
-				log.Println(err)
-			}
-			err = json.Unmarshal(encodedData, &decodedData)
-			if err != nil {
-				log.Println(err)
-			}
-
-			switch decodedData["type"].(string) {
-			case "message":
-				tarIDRaw := decodedData["uid"].(float64)
-				tarID := int(tarIDRaw)
-
-				encodedData, _ = json.Marshal(map[string]interface{}{
-					"type": "message",
-					"uid":  uid,
-				})
-
-				for _, cl := range clients {
-					if cl.uid == tarID {
-						_ = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
-					}
-				}
-
-			case "broadcast":
-				encodedData, _ = json.Marshal(map[string]interface{}{
-					"type": "user",
-					"uid":  uid,
-				})
-
-				for _, cl := range clients {
-					err = cl.conn.WriteMessage(websocket.TextMessage, encodedData)
-					if err != nil {
-						log.Println(err)
-					}
-				}
-			}
-
-		}
-	})
+	router.Path("/connect/{uid}").Methods("GET").HandlerFunc(HandleConnect)
 
 	return router
+}
+
+func testCreateAndConnect(t *testing.T, url string) (users.User, *websocket.Conn) {
+	t.Helper()
+
+	user := users.CreateTestUser(t)
+	url1 := "ws" + strings.TrimPrefix(url, "http") + "/connect/" + strconv.Itoa(user.ID)
+	conn, res, err := websocket.DefaultDialer.Dial(url1, nil)
+	chat.AssertTestErr(t, err)
+	chat.AssertTestStatusCode(t, res.StatusCode, http.StatusSwitchingProtocols)
+
+	return user, conn
+}
+
+func testSendMsg(t *testing.T, reqBody map[string]interface{}, conn *websocket.Conn) {
+	t.Helper()
+
+	encodedReqBody, err := json.Marshal(reqBody)
+	chat.AssertTestErr(t, err)
+
+	err = conn.WriteMessage(websocket.TextMessage, encodedReqBody)
+	chat.AssertTestErr(t, err)
+}
+
+func testRecvMsg(t *testing.T, conn *websocket.Conn) map[string]interface{} {
+	t.Helper()
+
+	_, encodedData, err := conn.ReadMessage()
+	var decodedData map[string]interface{}
+	err = json.Unmarshal(encodedData, &decodedData)
+	chat.AssertTestErr(t, err)
+
+	return decodedData
+}
+
+func testReadMsgAndComp(t *testing.T, conn *websocket.Conn, want map[string]interface{}) {
+	t.Helper()
+
+	_, encData, err := conn.ReadMessage()
+	chat.AssertTestErr(t, err)
+
+	var decData map[string]interface{}
+	err = json.Unmarshal(encData, &decData)
+	chat.AssertTestErr(t, err)
+
+	if !reflect.DeepEqual(decData, want) {
+		t.Errorf("got %#v, wanted %#v", decData, want)
+	}
 }
