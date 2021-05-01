@@ -3,7 +3,7 @@ package users
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"io/ioutil"
 	"net/http"
 )
@@ -11,7 +11,7 @@ import (
 func AddUser(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
 
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 
@@ -26,7 +26,7 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 		Uname: decodedReqBody["uname"],
 		Pass:  decodedReqBody["pass"],
 	}
-	res, err := chat.DB.Model(&user).Insert()
+	res, err := shared.DB.Model(&user).Insert()
 	if err != nil || res.RowsAffected() != 1 || user.ID == 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Println(err)
@@ -34,12 +34,12 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(user)
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 }

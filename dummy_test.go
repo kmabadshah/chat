@@ -1,8 +1,9 @@
-package chat
+package main
 
 import (
 	"encoding/json"
 	"github.com/kmabadshah/chat/messages"
+	"github.com/kmabadshah/chat/shared"
 	"testing"
 )
 
@@ -17,10 +18,10 @@ func TestDummy(t *testing.T) {
 		"text":  "hello world",
 	}
 	encodedX, err := json.Marshal(x)
-	AssertTestErr(t, err)
+	shared.AssertTestErr(t, err)
 
 	var decodedX messages.Message
 	err = json.Unmarshal(encodedX, &decodedX)
-	AssertTestErr(t, err)
+	shared.AssertTestErr(t, err)
 
 }

@@ -2,7 +2,7 @@ package friends
 
 import (
 	"encoding/json"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"github.com/kmabadshah/chat/users"
 	"io/ioutil"
 	"net/http"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestGetFriends(t *testing.T) {
-	chat.ClearAllTables()
+	shared.ClearAllTables()
 
 	router := NewRouter()
 	testServer := httptest.NewServer(router)
@@ -24,7 +24,7 @@ func TestGetFriends(t *testing.T) {
 
 	// add a friend
 	friend := Friend{SrcID: user1.ID, TarID: user2.ID}
-	result, err := chat.DB.Model(&friend).Insert()
+	result, err := shared.DB.Model(&friend).Insert()
 	if err != nil || result.RowsAffected() != 1 {
 		t.Fatal(err)
 	}
@@ -34,17 +34,17 @@ func TestGetFriends(t *testing.T) {
 		url := testServer.URL + "/friends/" + strconv.Itoa(id)
 
 		res, err := http.Get(url)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
-		chat.AssertTestStatusCode(t, res.StatusCode, wantedStatus)
+		shared.AssertTestStatusCode(t, res.StatusCode, wantedStatus)
 
 		if wantedResBody != nil {
 			var decodedResBody []map[string]int
 			err = json.Unmarshal(resBody, &decodedResBody)
-			chat.AssertTestErr(t, err)
+			shared.AssertTestErr(t, err)
 
 			if !reflect.DeepEqual(wantedResBody, decodedResBody) {
 				t.Errorf("wanted %#v, got %#v", wantedResBody, decodedResBody)

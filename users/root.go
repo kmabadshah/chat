@@ -3,7 +3,7 @@ package users
 import (
 	"context"
 	"github.com/gorilla/mux"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"log"
 	"testing"
 )
@@ -18,7 +18,7 @@ func init() {
 	log.SetFlags(log.Lshortfile)
 
 	ctx := context.Background()
-	if err := chat.DB.Ping(ctx); err != nil {
+	if err := shared.DB.Ping(ctx); err != nil {
 		panic(err)
 	}
 }
@@ -35,12 +35,12 @@ func NewRouter() *mux.Router {
 
 func CreateTestUser(t *testing.T) User {
 	user := User{
-		Uname: chat.RandSeq(5),
-		Pass:  chat.RandSeq(5),
+		Uname: shared.RandSeq(5),
+		Pass:  shared.RandSeq(5),
 	}
 
-	_, err := chat.DB.Model(&user).Insert()
-	chat.AssertTestErr(t, err)
+	_, err := shared.DB.Model(&user).Insert()
+	shared.AssertTestErr(t, err)
 
 	return user
 }

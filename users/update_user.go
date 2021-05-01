@@ -3,7 +3,7 @@ package users
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -35,7 +35,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	// check if the uname exists
 	var userCheck User
-	err = chat.DB.Model(&userCheck).Where("uname=?", decodedReqBody["uname"]).Select()
+	err = shared.DB.Model(&userCheck).Where("uname=?", decodedReqBody["uname"]).Select()
 	if userCheck.ID != 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(errUnameInUse))
@@ -45,7 +45,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// update the user
 	var user User
 	id := mux.Vars(r)["id"]
-	res, err := chat.DB.Model(&decodedReqBody).TableExpr("users").Where("id=?", id).Update()
+	res, err := shared.DB.Model(&decodedReqBody).TableExpr("users").Where("id=?", id).Update()
 	if err != nil || res.RowsAffected() != 1 {
 		log.Println(err)
 
@@ -53,7 +53,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = chat.DB.Model(&user).Where("id=?", id).Select()
+	err = shared.DB.Model(&user).Where("id=?", id).Select()
 	if err != nil {
 		log.Println(err)
 
@@ -62,12 +62,12 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(user)
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 }

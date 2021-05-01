@@ -3,7 +3,7 @@ package messages
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"github.com/kmabadshah/chat/users"
 	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
@@ -14,7 +14,7 @@ import (
 )
 
 func TestAddMessage(t *testing.T) {
-	chat.ClearAllTables()
+	shared.ClearAllTables()
 
 	router := NewRouter()
 	testServer := httptest.NewServer(router)
@@ -27,15 +27,15 @@ func TestAddMessage(t *testing.T) {
 
 	sendReqAndCompareRes := func(t *testing.T, reqBody map[string]interface{}, wantStatus int, wantBody string) {
 		encodedReqBody, err := json.Marshal(reqBody)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
-		chat.AssertTestStatusCode(t, res.StatusCode, wantStatus)
+		shared.AssertTestStatusCode(t, res.StatusCode, wantStatus)
 
 		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		want := wantBody
 		got := string(resBody)
@@ -55,12 +55,12 @@ func TestAddMessage(t *testing.T) {
 
 		t.Run("check if message added to db", func(t *testing.T) {
 			var messages []Message
-			err := chat.DB.Model(&messages).Select()
-			chat.AssertTestErr(t, err)
+			err := shared.DB.Model(&messages).Select()
+			shared.AssertTestErr(t, err)
 
 			var got map[string]interface{}
 			err = mapstructure.Decode(messages[0], &got)
-			chat.AssertTestErr(t, err)
+			shared.AssertTestErr(t, err)
 
 			want := reqBody
 

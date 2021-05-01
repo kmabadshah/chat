@@ -3,7 +3,7 @@ package connect
 import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"github.com/kmabadshah/chat/users"
 	"net/http/httptest"
 	"reflect"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestConnectUser(t *testing.T) {
-	chat.ClearAllTables()
+	shared.ClearAllTables()
 
 	router := NewRouter()
 	testServer := httptest.NewServer(router)
@@ -104,10 +104,10 @@ func TestConnectUser(t *testing.T) {
 			"type": "friend",
 			"uid":  float64(user2.ID),
 		})
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		err = conn1.WriteMessage(websocket.TextMessage, encMsg)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		want := map[string]interface{}{
 			"type": "friend",
@@ -118,7 +118,7 @@ func TestConnectUser(t *testing.T) {
 
 	t.Run("when user3 leaves", func(t *testing.T) {
 		err := conn3.Close()
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		t.Run("user2 gets notified", func(t *testing.T) {
 			want := map[string]interface{}{

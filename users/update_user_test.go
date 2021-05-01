@@ -3,7 +3,7 @@ package users
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestUpdateUser(t *testing.T) {
-	chat.ClearAllTables()
+	shared.ClearAllTables()
 
 	router := NewRouter()
 	testServer := httptest.NewServer(router)
@@ -22,15 +22,15 @@ func TestUpdateUser(t *testing.T) {
 
 	sendUpdateReq := func(t *testing.T, reqBody interface{}) *http.Response {
 		encodedReqBody, err := json.Marshal(reqBody)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		url := testServer.URL + "/users/" + strconv.Itoa(user.ID)
 		req, err := http.NewRequest("PUT", url, bytes.NewReader(encodedReqBody))
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		httpClient := http.Client{}
 		res, err := httpClient.Do(req)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		return res
 	}
@@ -41,14 +41,14 @@ func TestUpdateUser(t *testing.T) {
 		}
 		res := sendUpdateReq(t, reqBody)
 
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+		shared.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 
 		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		var decodedResBody map[string]interface{}
 		err = json.Unmarshal(resBody, &decodedResBody)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		if decodedResBody["pass"] != reqBody["pass"] || decodedResBody["uname"] != user.Uname {
 			t.Errorf("user not updated, got %#v", decodedResBody)
@@ -61,14 +61,14 @@ func TestUpdateUser(t *testing.T) {
 		}
 		res := sendUpdateReq(t, reqBody)
 
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+		shared.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 
 		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		var decodedResBody map[string]interface{}
 		err = json.Unmarshal(resBody, &decodedResBody)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		if decodedResBody["uname"] != reqBody["uname"] || decodedResBody["pass"] != "badshah" {
 			t.Errorf("user not updated, got %#v", decodedResBody)
@@ -83,10 +83,10 @@ func TestUpdateUser(t *testing.T) {
 		}
 		res := sendUpdateReq(t, reqBody)
 
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
+		shared.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
 
 		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		got := string(resBody)
 		want := errUnameInUse
@@ -102,10 +102,10 @@ func TestUpdateUser(t *testing.T) {
 		}
 		res := sendUpdateReq(t, reqBody)
 
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
+		shared.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
 
 		resBody, err := ioutil.ReadAll(res.Body)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		got := string(resBody)
 		want := errUpdateBody

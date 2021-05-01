@@ -2,7 +2,7 @@ package messages
 
 import (
 	"encoding/json"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"io/ioutil"
 	"net/http"
 )
@@ -42,7 +42,7 @@ func AddMessage(w http.ResponseWriter, r *http.Request) {
 		TarID: int(decodedReqBody["tarID"].(float64)),
 		Text:  decodedReqBody["text"].(string),
 	}
-	res, err := chat.DB.Model(&message).Insert()
+	res, err := shared.DB.Model(&message).Insert()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

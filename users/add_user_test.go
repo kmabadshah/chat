@@ -3,7 +3,7 @@ package users
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestAddUser(t *testing.T) {
-	chat.ClearAllTables()
+	shared.ClearAllTables()
 
 	router := NewRouter()
 	testServer := httptest.NewServer(router)
@@ -23,20 +23,20 @@ func TestAddUser(t *testing.T) {
 		"pass":  "badshah",
 	}
 	encodedReqBody, err := json.Marshal(reqBody)
-	chat.AssertTestErr(t, err)
+	shared.AssertTestErr(t, err)
 
 	res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
-	chat.AssertTestErr(t, err)
+	shared.AssertTestErr(t, err)
 
 	resBody, err := ioutil.ReadAll(res.Body)
-	chat.AssertTestErr(t, err)
+	shared.AssertTestErr(t, err)
 
 	var decodedResBody map[string]interface{}
 	err = json.Unmarshal(resBody, &decodedResBody)
-	chat.AssertTestErr(t, err)
+	shared.AssertTestErr(t, err)
 
 	t.Run("check status code", func(t *testing.T) {
-		chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+		shared.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 	})
 	t.Run("check res body", func(t *testing.T) {
 		for k, v := range reqBody {
@@ -48,8 +48,8 @@ func TestAddUser(t *testing.T) {
 
 	t.Run("check if user stored in db", func(t *testing.T) {
 		var users []User
-		err := chat.DB.Model(&users).Select()
-		chat.AssertTestErr(t, err)
+		err := shared.DB.Model(&users).Select()
+		shared.AssertTestErr(t, err)
 
 		if len(users) != 1 || users[0].Uname != reqBody["uname"] {
 			t.Errorf("user not stored in db")
@@ -61,10 +61,10 @@ func TestAddUser(t *testing.T) {
 			"pass": "badshah",
 		}
 		encodedReqBody, err := json.Marshal(reqBody)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		gotStatus := res.StatusCode
 		wantStatus := http.StatusBadRequest

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"log"
 	"net/http"
 	"strconv"
@@ -15,11 +15,11 @@ var clients []Client
 func HandleConnect(w http.ResponseWriter, r *http.Request) {
 	uidRaw := mux.Vars(r)["uid"]
 	uid, err := strconv.Atoi(uidRaw)
-	chat.AssertInternalError(err, &w)
+	shared.AssertInternalError(err, &w)
 
 	upgrader := websocket.Upgrader{}
 	conn, err := upgrader.Upgrade(w, r, nil)
-	chat.AssertInternalError(err, &w)
+	shared.AssertInternalError(err, &w)
 
 	defer conn.Close()
 

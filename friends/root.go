@@ -3,7 +3,7 @@ package friends
 import (
 	"context"
 	"github.com/gorilla/mux"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"log"
 )
 
@@ -16,7 +16,7 @@ func init() {
 	log.SetFlags(log.Lshortfile)
 
 	ctx := context.Background()
-	if err := chat.DB.Ping(ctx); err != nil {
+	if err := shared.DB.Ping(ctx); err != nil {
 		panic(err)
 	}
 }

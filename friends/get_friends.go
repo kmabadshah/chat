@@ -3,7 +3,7 @@ package friends
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"log"
 	"net/http"
 )
@@ -12,7 +12,7 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
 	var friends []Friend
-	err := chat.DB.Model(&friends).Where("src_id=?", id).WhereOr("tar_id=?", id).Select()
+	err := shared.DB.Model(&friends).Where("src_id=?", id).WhereOr("tar_id=?", id).Select()
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -24,7 +24,7 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 	}
 
 	encodedResBody, err := json.Marshal(friends)
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 

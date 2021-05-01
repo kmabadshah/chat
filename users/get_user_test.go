@@ -2,7 +2,7 @@ package users
 
 import (
 	"encoding/json"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"github.com/mitchellh/mapstructure"
 	"io/ioutil"
 	"net/http"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestGetUser(t *testing.T) {
-	chat.ClearAllTables()
+	shared.ClearAllTables()
 
 	user := CreateTestUser(t)
 
@@ -24,19 +24,19 @@ func TestGetUser(t *testing.T) {
 	t.Run("valid name", func(t *testing.T) {
 		url := testServer.URL + "/users/" + user.Uname
 		res, err := http.Get(url)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		t.Run("check code", func(t *testing.T) {
-			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+			shared.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 		})
 
 		t.Run("check res body", func(t *testing.T) {
 			resBody, err := ioutil.ReadAll(res.Body)
-			chat.AssertTestErr(t, err)
+			shared.AssertTestErr(t, err)
 
 			var decodedResBody map[string]interface{}
 			err = json.Unmarshal(resBody, &decodedResBody)
-			chat.AssertTestErr(t, err)
+			shared.AssertTestErr(t, err)
 
 			if reflect.TypeOf(decodedResBody["id"]).String() == "float64" {
 				decodedResBody["id"] = int(decodedResBody["id"].(float64))
@@ -48,7 +48,7 @@ func TestGetUser(t *testing.T) {
 
 			var want map[string]interface{}
 			err = mapstructure.Decode(user, &want)
-			chat.AssertTestErr(t, err)
+			shared.AssertTestErr(t, err)
 
 			if !reflect.DeepEqual(want, decodedResBody) {
 				t.Errorf("wanted %#v, got %#v", want, decodedResBody)
@@ -59,10 +59,10 @@ func TestGetUser(t *testing.T) {
 	t.Run("invalid name", func(t *testing.T) {
 		url := testServer.URL + "/users/" + strconv.Itoa(-1)
 		res, err := http.Get(url)
-		chat.AssertTestErr(t, err)
+		shared.AssertTestErr(t, err)
 
 		t.Run("check status code", func(t *testing.T) {
-			chat.AssertTestStatusCode(t, res.StatusCode, http.StatusNotFound)
+			shared.AssertTestStatusCode(t, res.StatusCode, http.StatusNotFound)
 		})
 	})
 }

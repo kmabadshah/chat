@@ -2,22 +2,22 @@ package users
 
 import (
 	"encoding/json"
-	"github.com/kmabadshah/chat"
+	"github.com/kmabadshah/chat/shared"
 	"net/http"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	var users []User
-	err := chat.DB.Model(&users).Select()
-	chat.AssertInternalError(err, &w)
+	err := shared.DB.Model(&users).Select()
+	shared.AssertInternalError(err, &w)
 
 	encodedResBody, err := json.Marshal(users)
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 
 	_, err = w.Write(encodedResBody)
-	if chat.AssertInternalError(err, &w) {
+	if shared.AssertInternalError(err, &w) {
 		return
 	}
 }

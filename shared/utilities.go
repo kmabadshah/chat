@@ -1,4 +1,4 @@
-package chat
+package shared
 
 import (
 	"github.com/go-pg/pg/v10"
