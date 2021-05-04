@@ -23,5 +23,4 @@ func TestDummy(t *testing.T) {
 	var decodedX messages.Message
 	err = json.Unmarshal(encodedX, &decodedX)
 	shared.AssertTestErr(t, err)
-
 }

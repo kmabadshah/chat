@@ -17,19 +17,34 @@ func main() {
 
 	router := mux.NewRouter()
 
-	router.Path("/connect/{uid}").Methods("GET").HandlerFunc(connect.HandleConnect)
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, DELETE, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	router.Path("/friends").Methods("POST").HandlerFunc(friends.AddFriend)
-	router.Path("/friends/{id}").Methods("GET").HandlerFunc(friends.GetFriends)
+			next.ServeHTTP(w, r)
+		})
+	})
 
-	router.Path("/messages").Methods("POST").HandlerFunc(messages.AddMessage)
-	router.Path("/messages/{uid}").Methods("GET").HandlerFunc(messages.GetMessages)
+	router.PathPrefix("/api/").Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
-	router.Path("/users").Methods("POST").HandlerFunc(users.AddUser)
-	router.Path("/users/{uname}").Methods("GET").HandlerFunc(users.GetUser)
-	router.Path("/users").Methods("GET").HandlerFunc(users.GetUsers)
-	router.Path("/users/{id}").Methods("PUT").HandlerFunc(users.UpdateUser)
+	router.Path("/api/connect/{uid}").Methods("GET").HandlerFunc(connect.HandleConnect)
+
+	router.Path("/api/friends").Methods("POST").HandlerFunc(friends.AddFriend)
+	router.Path("/api/friends/{id}").Methods("GET").HandlerFunc(friends.GetFriends)
+
+	router.Path("/api/messages").Methods("POST").HandlerFunc(messages.AddMessage)
+	router.Path("/api/messages/{uid}").Methods("GET").HandlerFunc(messages.GetMessages)
+
+	router.Path("/api/users").Methods("POST").HandlerFunc(users.AddUser)
+	router.Path("/api/users/{uname}").Methods("GET").HandlerFunc(users.GetUser)
+	router.Path("/api/users").Methods("GET").HandlerFunc(users.GetUsers)
+	router.Path("/api/users/{id}").Methods("PUT").HandlerFunc(users.UpdateUser)
 
 	fmt.Println("listening on 8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
+
 }

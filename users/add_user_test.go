@@ -72,4 +72,19 @@ func TestAddUser(t *testing.T) {
 			t.Errorf("invalid code, wanted %#v, got %#v", wantStatus, gotStatus)
 		}
 	})
+
+	t.Run("storing user that already exists", func(t *testing.T) {
+		url := testServer.URL + "/users"
+		reqBody := map[string]string{
+			"uname": "adnan",
+			"pass":  "badshah",
+		}
+		encodedReqBody, err := json.Marshal(reqBody)
+		shared.AssertTestErr(t, err)
+
+		res, err := http.Post(url, "application/json", bytes.NewReader(encodedReqBody))
+		shared.AssertTestErr(t, err)
+
+		shared.AssertTestStatusCode(t, res.StatusCode, http.StatusBadRequest)
+	})
 }

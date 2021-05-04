@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/kmabadshah/chat/shared"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -17,7 +18,22 @@ func AddUser(w http.ResponseWriter, r *http.Request) {
 
 	var decodedReqBody map[string]string
 	err = json.Unmarshal(reqBody, &decodedReqBody)
+
 	if err != nil || decodedReqBody["uname"] == "" || decodedReqBody["pass"] == "" {
+		log.Println(err, decodedReqBody)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// check if already exists
+	var usr []User
+	err = shared.DB.Model(&usr).Where("uname=?", decodedReqBody["uname"]).Select()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if len(usr) == 1 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
