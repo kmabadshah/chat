@@ -21,7 +21,7 @@ func TestGetUser(t *testing.T) {
 	testServer := httptest.NewServer(router)
 	defer testServer.Close()
 
-	t.Run("valid name", func(t *testing.T) {
+	t.Run("valid uname", func(t *testing.T) {
 		url := testServer.URL + "/users/" + user.Uname
 		res, err := http.Get(url)
 		shared.AssertTestErr(t, err)

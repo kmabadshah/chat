@@ -22,13 +22,6 @@ func TestGetFriends(t *testing.T) {
 	user1 := users.CreateTestUser(t)
 	user2 := users.CreateTestUser(t)
 
-	// add a friend
-	friend := Friend{SrcID: user1.ID, TarID: user2.ID}
-	result, err := shared.DB.Model(&friend).Insert()
-	if err != nil || result.RowsAffected() != 1 {
-		t.Fatal(err)
-	}
-
 	sendReqAndCompareRes := func(t *testing.T, id int, wantedStatus int, wantedResBody interface{}) {
 		t.Helper()
 		url := testServer.URL + "/friends/" + strconv.Itoa(id)
@@ -52,7 +45,19 @@ func TestGetFriends(t *testing.T) {
 		}
 	}
 
-	t.Run("valid id", func(t *testing.T) {
+	t.Run("valid uid with out friends", func(t *testing.T) {
+		sendReqAndCompareRes(t, user1.ID, 200, nil)
+		sendReqAndCompareRes(t, user2.ID, 200, nil)
+	})
+
+	t.Run("valid uid with existing friend", func(t *testing.T) {
+		// add a friend
+		friend := Friend{SrcID: user1.ID, TarID: user2.ID}
+		result, err := shared.DB.Model(&friend).Insert()
+		if err != nil || result.RowsAffected() != 1 {
+			t.Fatal(err)
+		}
+
 		t.Run("user2 is friend of user1", func(t *testing.T) {
 			resBody := []map[string]int{
 				{"srcID": user1.ID, "tarID": user2.ID},
