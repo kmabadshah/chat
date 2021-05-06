@@ -34,31 +34,62 @@ func TestGetMessages(t *testing.T) {
 	}
 
 	t.Run("valid id", func(t *testing.T) {
-		url := testServer.URL + "/messages/" + strconv.Itoa(user1.ID)
-		res, err := http.Get(url)
-		shared.AssertTestErr(t, err)
+		t.Run("user1->user2", func(t *testing.T) {
+			url := testServer.URL + "/messages/" + strconv.Itoa(user1.ID)
+			res, err := http.Get(url)
+			shared.AssertTestErr(t, err)
 
-		resBody, err := ioutil.ReadAll(res.Body)
-		shared.AssertTestErr(t, err)
+			resBody, err := ioutil.ReadAll(res.Body)
+			shared.AssertTestErr(t, err)
 
-		shared.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+			shared.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
 
-		var decodedResBody []map[string]interface{}
-		err = json.Unmarshal(resBody, &decodedResBody)
-		shared.AssertTestErr(t, err)
+			var decodedResBody []map[string]interface{}
+			err = json.Unmarshal(resBody, &decodedResBody)
+			shared.AssertTestErr(t, err)
 
-		want := []map[string]interface{}{
-			{
-				"srcID": float64(user1.ID),
-				"tarID": float64(user2.ID),
-				"text":  "hello user2",
-			},
-		}
-		got := decodedResBody
+			want := []map[string]interface{}{
+				{
+					"srcID": float64(user1.ID),
+					"tarID": float64(user2.ID),
+					"text":  "hello user2",
+				},
+			}
+			got := decodedResBody
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("want %#v, got %#v", want, got)
-		}
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("want %#v, got %#v", want, got)
+			}
+		})
+
+		t.Run("user2->user1", func(t *testing.T) {
+			url := testServer.URL + "/messages/" + strconv.Itoa(user2.ID)
+			res, err := http.Get(url)
+			shared.AssertTestErr(t, err)
+
+			resBody, err := ioutil.ReadAll(res.Body)
+			shared.AssertTestErr(t, err)
+
+			shared.AssertTestStatusCode(t, res.StatusCode, http.StatusOK)
+
+			var decodedResBody []map[string]interface{}
+			err = json.Unmarshal(resBody, &decodedResBody)
+			shared.AssertTestErr(t, err)
+
+			want := []map[string]interface{}{
+				{
+					"srcID": float64(user1.ID),
+					"tarID": float64(user2.ID),
+					"text":  "hello user2",
+				},
+			}
+			got := decodedResBody
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("want %#v, got %#v", want, got)
+			}
+		})
+
 	})
 
 	t.Run("invalid id", func(t *testing.T) {

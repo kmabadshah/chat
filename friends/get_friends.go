@@ -52,10 +52,6 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 
 		friendUsers = append(friendUsers, user)
 	}
-	//if len(friends) == 0 {
-	//	w.WriteHeader(http.StatusNotFound)
-	//	return
-	//}
 
 	encodedResBody, err := json.Marshal(friendUsers)
 	if shared.AssertInternalError(err, &w) {
