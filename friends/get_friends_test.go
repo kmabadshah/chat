@@ -35,7 +35,7 @@ func TestGetFriends(t *testing.T) {
 		shared.AssertTestStatusCode(t, res.StatusCode, wantedStatus)
 
 		if wantedResBody != nil {
-			var decodedResBody []map[string]int
+			var decodedResBody []map[string]interface{}
 			err = json.Unmarshal(resBody, &decodedResBody)
 			shared.AssertTestErr(t, err)
 
@@ -59,15 +59,15 @@ func TestGetFriends(t *testing.T) {
 		}
 
 		t.Run("user2 is friend of user1", func(t *testing.T) {
-			resBody := []map[string]int{
-				{"srcID": user1.ID, "tarID": user2.ID},
+			resBody := []map[string]interface{}{
+				{"uname": user2.Uname, "pass": user2.Pass, "id": float64(user2.ID)},
 			}
 			sendReqAndCompareRes(t, user1.ID, 200, resBody)
 		})
 
 		t.Run("user1 is friend of user2", func(t *testing.T) {
-			resBody := []map[string]int{
-				{"srcID": user1.ID, "tarID": user2.ID},
+			resBody := []map[string]interface{}{
+				{"uname": user1.Uname, "pass": user1.Pass, "id": float64(user1.ID)},
 			}
 			sendReqAndCompareRes(t, user2.ID, 200, resBody)
 		})

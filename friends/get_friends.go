@@ -7,16 +7,17 @@ import (
 	"github.com/kmabadshah/chat/users"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 func GetFriends(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
 	// check if valid id
-	var users []users.User
-	shared.DB.Model(&users).Where("id=?", id).Select()
+	var usrs []users.User
+	shared.DB.Model(&usrs).Where("id=?", id).Select()
 
-	if len(users) != 1 {
+	if len(usrs) != 1 {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -28,12 +29,35 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	var friendUsers []users.User
+
+	for _, f := range friends {
+		intId, _ := strconv.Atoi(id)
+
+		var user users.User
+		var err error
+
+		if f.SrcID != intId {
+			err = shared.DB.Model(&user).Where("id=?", f.SrcID).Select()
+		} else {
+			err = shared.DB.Model(&user).Where("id=?", f.TarID).Select()
+		}
+
+		if err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		friendUsers = append(friendUsers, user)
+	}
 	//if len(friends) == 0 {
 	//	w.WriteHeader(http.StatusNotFound)
 	//	return
 	//}
 
-	encodedResBody, err := json.Marshal(friends)
+	encodedResBody, err := json.Marshal(friendUsers)
 	if shared.AssertInternalError(err, &w) {
 		return
 	}
